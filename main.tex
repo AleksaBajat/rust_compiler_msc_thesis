@@ -1,0 +1,120 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{hyperref}
+
+\title{Reprezentacija izvornog koda - Rust kompajler}
+\author{Aleksa Bajat}
+\date{September 2024}
+
+\begin{document}
+
+\maketitle
+
+\section{Uvod}
+
+U svetu razvoja sistema visokih performansi, operativnih sistema, drajvera i bilo kog drugog kritičnog softvera koriste se jezici niskog nivoa kao što su C i C++.
+Tokom godina Microsoft je uvideo da je preko 70\% bezbednosnih slabosti nastalo pogrešnom manipulacijom i korupcijom memorije [1]. 
+C nema odbrambene mehanizme od ovakvih problema (pored potencijalnih dodatnih upozorenja koja se mogu ostvariti dvostrukom upotrebom GCC i Clang kompajlera), dok C++ uprkos dodavanju konstrukta kao što su \verb|unique_ptr|, \verb|shared_ptr| i \verb|weak_ptr| interoperabilnost sa starijim standardima ili bibliotekama zahteva korišćenje sirovih pokazivača. 
+
+Rust jezik je nastao sa ciljem da reši ovaj problem. Podrazumevana upotreba jezika je inherentno bezbedna sa aspekta memorije i paralelizma. Bezbednost se ostvaruje robustnim sistemom tipova, novog načina rukovanja memorijom i veoma striktnog \verb|rustc| kompajlera.
+U C++ ekosistemu koriste se softverski obrasci kao što je \verb|Scope-bound Resource Management| da bi se standardizovala alokacija i dealkoacija memorije, ali korisnik jezika nije primoran da softvrski obrazac upotrebi. U Rust jeziku izbor ne postoji, na kraju svakog opsega vrši se automatska dealokacija memorije preko \verb|borrow checker| mehanizma (nije potreban manuelni poziv \verb|free|).
+C i C++ poseduju veoma dvosmislene i neprecizne poruke kada se greška dogodi dok Rust jezik karakterišu veoma precizne poruke koje opisuju gde se desila greška i kako je potencijalno rešiti.
+
+Prvobitna verzija Rust kompajlera je napisana u \verb|O'Caml| jeziku, dok je svaka sledeća verzija napisana u samom Rust-u.
+Medjutim treba imati na umu da je Rust samo \verb|frontend| nad \verb|LLVM|-om. LLVM je kolekcija modularnih i ponovo iskoristivih tehnologija za izradu kompajlera. Rust se oslanja u potpunosti na \verb|LLVM| prilikom generisanja mašinskog koda, dok je svaki drugi deo
+(\verb|frontend|) napisan potpuno ispočetka.
+Veliki deo Rust jezika je izuzetno inovativan i samim tim to je razlog da se detaljno istraži kako u pozadini funkcioniše.
+
+Reprezentacija izvornog koda jeste prikaz ili skup prikaza izvornog koda korisnika jezika da bi se obezbedili tipovi, dijagnostika,
+automatska dealokacija memorije i ostali ergonomski i funkcionalni delovi jezika.
+\newpage
+
+
+\section{Verzije Rust kompajlera}
+
+Rust kompajler u svakom trenutku poseduje tri glavne verzije skupa alata (\verb|toolchain|):
+
+\begin{enumerate}
+    \item \verb|Stable| - preporučena za svakodnevnu upotrebu. 
+    \item \verb|Beta| - sa funkcionalnostima koje se usvajaju u sledećoj stabilnoj verziji (\verb|beta| postaje \verb|stable|).
+    \item \verb|Nightly| - sa eksperimentalnim/nestabilnim funkcionalnostima. 
+\end{enumerate}
+
+\verb|Toolchain| se može promeniti na više načina ali najjednostavniji je:
+\begin{verbatim}
+    rustup toolchain install [version]
+    rustup override set [version]
+\end{verbatim}
+
+Prikaz dostupnih lokalnih verzija, kao i trenutna aktivna verzija se može prikazati upotrebom (izlaz prikazan ispod naredbe):
+\begin{verbatim}
+    rustup show
+
+    installed toolchains
+    --------------------
+    
+    stable-x86_64-unknown-linux-gnu (default)
+    nightly-2024-06-30-x86_64-unknown-linux-gnu
+    nightly-2024-07-02-x86_64-unknown-linux-gnu
+    nightly-x86_64-unknown-linux-gnu
+    stage0
+    stage1
+    
+    active toolchain
+    ----------------
+
+    nightly-x86_64-unknown-linux-gnu (directory 
+    override for '/home/abajat/Documents/projects/master')
+    rustc 1.83.0-nightly (12b26c13f 2024-09-07)
+\end{verbatim}
+
+Rust ima obećanje da će zauvek biti kompatibilan unazad uprkos konstantnom razvoju.
+
+\newpage
+
+\section{Upotreba Rust kompajlera}
+
+Rust kompajler \verb|rustc| sa sastoji iz izuzetno velikog broja modula. 
+Medjutim njegova upotreba je krajnje jednostavna.
+Izvorni kod se prenese u tekstualni dokument i pozove se sledeća naredba:
+\begin{verbatim}
+    rustc filename.rs
+\end{verbatim}
+nakon čega se kreira izvršni fajl pod istim imenom (pod uslovom da je kod ispravan).
+
+Napredni korisnici Rust-a upotrebom promenljivih okruženja i zastavica funkcionalnosti 
+(\verb|feature flag|) uvode ili menjaju osnovno ponašanje \verb|rustc| kompajlera.
+Funkcionalnosti korisne za razvoj Rust kompajlera su omogućene samo u \verb|Nightly| verziji koje se
+ispoljavaju preko -Z (nestabilnih) zastavica. Mogu se prikazati upotrebom:
+
+\begin{verbatim}
+    rustc -C help # stable
+    rustc -Z help # unstable
+\end{verbatim}
+
+
+\section{Reprezentacije izvornog koda}
+
+Reprezentacije izvornog koda Rust-a se dele na:
+
+\begin{enumerate}    
+    \item Tok tokena
+    \item Apstraktno sintaksno stablo
+    \item Posredna reprezentacija visokog nivoa
+    \item Tipizirana reprezentacija visokog nivoa
+    \item Reprezentacija srednjeg nivoa
+    \item LLVM reprezentacija
+\end{enumerate}
+
+
+\subsection{Tok tokena}
+
+
+
+\section{Reference}
+[1] MSRC, “A proactive approach to more secure code | MSRC Blog | 
+Microsoft Security Response Center,” Microsoft.com, Jul. 16, 2019. 
+\url{https://msrc.microsoft.com/blog/2019/07/a-proactive-approach-to-more-secure-code/} 
+(pristupljeno Sep. 08, 2024).
+
+\end{document}
