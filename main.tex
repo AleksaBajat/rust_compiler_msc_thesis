@@ -9,6 +9,9 @@
 \begin{document}
 
 \maketitle
+\newpage
+\tableofcontents
+\newpage
 
 \section{Uvod}
 
@@ -109,8 +112,14 @@ Reprezentacije izvornog koda Rust-a se dele na:
 
 \subsection{Tok tokena}
 
-Izvorni Rust kod je analiziran od strane leksera niskog nivoa \verb|rustc_lexer|.
-Glavna javna funkcija iz ovog modula jeste \verb|tokenize| koja na osnovu celokupnog teksta 
+Rust kompajler poseduje dva leksera \verb|rustc_lexer| i \verb|rustc_parse::lexer|. Oba su jednako bitna 
+jer drugi koristi prvi tokom kompajliranja.
+
+\subsubsection{rustc\_lexer}
+
+\verb|rustc_lexer| je lekser niskog nivoa koji poseduje sve osnovne
+funkcionalnosti potrebne prilikom prikupljanja leksema.
+Glavna funkcija iz ovog modula jeste \verb|tokenize| koja na osnovu celokupnog teksta 
 izvornog koda dobavlja skup tokena tj. leksema.
 
 \begin{verbatim}
