@@ -78,8 +78,8 @@ Rust ima obećanje da će zauvek biti kompatibilan unazad uprkos konstantnom raz
 \section{Upotreba Rust kompajlera}
 
 Rust kompajler \verb|rustc| sa sastoji iz izuzetno velikog broja modula. 
-Medjutim njegova upotreba je krajnje jednostavna.
-Izvorni kod se prenese u tekstualni dokument i pozove se sledeća naredba:
+Medjutim upotreba kompajlera je krajnje jednostavna.
+Izvorni kod se prenese u tekstualni dokument i poziva se sledeća naredba:
 \begin{verbatim}
     rustc filename.rs
 \end{verbatim}
@@ -112,8 +112,8 @@ Reprezentacije izvornog koda Rust-a se dele na:
 
 \subsection{Tok tokena}
 
-Rust kompajler poseduje dva leksera \verb|rustc_lexer| i \verb|rustc_parse::lexer|. Oba su jednako bitna 
-jer drugi koristi prvi tokom kompajliranja.
+Rust kompajler poseduje dva leksera \verb|rustc_lexer| i \verb|rustc_parse::lexer|. Oba su bitna 
+jer \verb|rusc_parse::lexer| koristi \verb|rustc_lexer| tokom kompajliranja.
 
 \subsubsection{rustc\_lexer}
 
@@ -162,10 +162,10 @@ izvršavanje u jednom prolasku.
         iter.next().unwrap_or(EOF_CHAR)
     }
 \end{verbatim}
-Primećuje se da je kloniranje iteratora izuzetno jeftina operacija jer se svodi na kopiranje meta podataka
+Kloniranje iteratora je jeftina operacija jer se svodi na kopiranje meta podataka
 kao što je trenutna adresa.
 
-Bitno je napomenuti da \verb|Token| sadrži samo informaciju o tipu token-a i njegovu dužinu ali ne i 
+\verb|Token| sadrži samo informaciju o tipu token-a i njegovu dužinu ali ne i 
 sam podatak.
 
 \begin{verbatim}
@@ -176,7 +176,40 @@ pub struct Token {
 }   
 \end{verbatim}
 
+\subsubsection{rustc\_parse::lexer}
 
+Lekser višeg nivoa \verb|rustc_parse::lexer| koristi \verb|rustc_lexer| prilikom izvršavanja sopstvenih
+operacija. Bitna razlika je što se sadržaj token analizira i postavlja u kontekst.
+Lekser višeg nivoa koristi kursor svog prethodnika za dobavljanje leksema ali unutar strukture \verb|StringReader|. 
+
+\begin{verbatim}
+    struct StringReader<'psess, 'src> {
+        psess: &'psess ParseSess,
+        start_pos: BytePos,
+        pos: BytePos,
+        src: &'src str,
+        cursor: Cursor<'src>,
+        override_span: Option<Span>,
+        nbsp_is_whitespace: bool,
+        last_lifetime: Option<Span>,
+    }
+\end{verbatim}
+\verb|StringReader| prati trenutnu poziciju unutar izvornog koda, a kursor 
+dobavlja token koji ima odredjenu dužinu. Sadržaj tokena je niz karaktera sa početkom u \verb|pos|,
+dužine od \verb|token.len|.
+
+Prolaskom kroz izvorni kod izvršavaju se sledeće akcije:
+\begin{enumerate}
+    \item Interniranje 
+    \item Tokeni iz \verb|rustc_lexer| se pretvaraju u kompleksnije tokene iz \verb|rustc_ast|
+    \item Rezulucija zagrada svih tipova.
+    \item Problemi i preporuke generišu dijagnostiku (deo parsiranja)
+\end{enumerate}
+
+Interniranje je proces u kome se stringovi pretvaraju internirane simbole. Na ovaj način
+se čuva samo jedna nepromenljiva kopija sadržaja tokena. Tabela simbola je struktura podataka
+koja čuva i održava O(1) pristup bilo kom simbolu.  Tabela simbola je implementirana pomoću \verb|IndexSet|
+strukture. Ne internira se svaki token, već samo tokeni koji imaju varijabilnu dužinu.
 
 
 \section{Reference}
