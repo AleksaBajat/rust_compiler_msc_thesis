@@ -196,14 +196,14 @@ Lekser višeg nivoa koristi kursor svog prethodnika za dobavljanje leksema ali u
 \end{verbatim}
 \verb|StringReader| prati trenutnu poziciju unutar izvornog koda, a kursor 
 dobavlja token koji ima odredjenu dužinu. Sadržaj tokena je niz karaktera sa početkom u \verb|pos|,
-dužine od \verb|token.len|.
+dužine od \verb|token.len|. 
 
 Prolaskom kroz izvorni kod izvršavaju se sledeće akcije:
 \begin{enumerate}
     \item Interniranje 
-    \item Tokeni iz \verb|rustc_lexer| se pretvaraju u kompleksnije tokene iz \verb|rustc_ast|
+    \item Tokeni iz \verb|rustc_lexer| se mapiraju na tokene iz \verb|rustc_ast|
     \item Rezulucija zagrada svih tipova.
-    \item Problemi i preporuke generišu dijagnostiku (deo parsiranja)
+    \item Problemi i preporuke generišu dijagnostiku 
 \end{enumerate}
 
 Interniranje je proces u kome se stringovi pretvaraju internirane simbole. Na ovaj način
@@ -211,7 +211,113 @@ se čuva samo jedna nepromenljiva kopija sadržaja tokena. Tabela simbola je str
 koja čuva i održava O(1) pristup bilo kom simbolu.  Tabela simbola je implementirana pomoću \verb|IndexSet|
 strukture. Ne internira se svaki token, već samo tokeni koji imaju varijabilnu dužinu.
 
+Mapiranje tokena iz leksera u tip tokena iz apstraktnog sintaksnog stabla je trivialno.
+Za proste tipove vrši se jedan na jedan konverzija.
 
+\begin{verbatim}
+    rustc_lexer::TokenKind::Semi => token::Semi,
+    rustc_lexer::TokenKind::Comma => token::Comma,
+    rustc_lexer::TokenKind::Dot => token::Dot,
+\end{verbatim}
+Za tipove koji imaju sadržaj u vidu nizova karaktera, sadržaj se internira i prenosi 
+u novi token putem simbola. Apstraktno sintaksno stablo se često koristi i zbog tog razloga 
+mora biti memorijski optimizovano.
+
+\begin{verbatim}
+    let ident = Symbol::intern(lifetime_name);
+    token::Lifetime(ident, IdentIsRaw::No)
+\end{verbatim}
+U primeru se može uočiti da \verb|ast_token|-i po potrebi mogu da imaju i dodatne parametre.
+
+Rezolucija zagrada se dešava u samom vrhu procesa \verb|rustc_parser::lexer|-a 
+za vreme kreiranja toka tokena. U kontekstu kompajlera zagrade se nazivaju delimiteri.
+Svaki tip otvorenog delimitera mora biti zatvoren delimiterom istog tipa koji je zatvoren.
+\begin{verbatim}
+fn lex_token_trees(
+    &mut self,
+    is_delimited: bool,
+) -> (Spacing, TokenStream, Result<(), Vec<PErr<'psess>>>) {
+    // Move past the opening delimiter.
+    let (_, open_spacing) = self.bump(false);
+    let mut buf = Vec::new();
+    loop {
+        match self.token.kind {
+            token::OpenDelim(delim) => buf.push(match self
+            .lex_token_tree_open_delim(delim) {
+                Ok(val) => val,
+                Err(errs) => return (open_spacing, 
+                TokenStream::new(buf), Err(errs)),
+            }),
+            token::CloseDelim(delim) => {
+                return (
+                    open_spacing,
+                    TokenStream::new(buf),
+                    if is_delimited { 
+                        Ok(()) 
+                    } else { Err(vec![self.close_delim_err(delim)]) },
+                );
+            }
+            token::Eof => {
+                return (
+                    open_spacing,
+                    TokenStream::new(buf),
+                    if is_delimited { Err(vec![self.eof_err()]) } 
+                    else { Ok(()) },
+                );
+            }
+            _ => {
+                // Get the next normal token.
+                let (this_tok, this_spacing) = self.bump(true);
+                buf.push(TokenTree::Token(this_tok, this_spacing));
+    } } } }
+\end{verbatim}
+
+\newpage
+
+Primećuje se da u slučaju da kada delimiter ne postoji, dodavanje tokena u tok tokena 
+je sekvencijalno i ne zahteva nikakvu kompleksnu logiku. Promenljiva \verb|is_delimited|
+označava da li trenutna sekvenca tokena pripada nekom paru delimitera. U slučaju da 
+se naidje na zatvoren tip delimitera bez da je prethodno postojao otvoren, vraća se greška
+u vidu dijagnostike. U sličnom kontekstu, nailazak na token kraj-a fajla bez da je svaka 
+zagrada zatvorena je greška. 
+Nailaskom na \verb|token::Eof| ili \verb|token::CloseDelim| se završava prikupljanje toka tokena.
+Ovo su veoma korisni granični slučajevi koji omogućavaju rekurziju. 
+
+Obrada otvorenog tipa delimitera u pozadini poziva funkciju \verb|lex_token_trees| koji obradjuje
+tok tokena izmedju novog para zagrada.
+\begin{verbatim}
+    fn lex_token_tree_open_delim(
+        &mut self,
+        open_delim: Delimiter,
+    ) -> Result<TokenTree, Vec<PErr<'psess>>> {
+        // The span for beginning of the delimited section.
+        let pre_span = self.token.span;
+
+        self.diag_info.open_braces.push((open_delim, self.token.span));
+
+        // Lex the token trees within the delimiters.
+        // We stop at any delimiter so we can try to recover if the user
+        // uses an incorrect delimiter.
+        let (open_spacing, tts, res) = self
+                            .lex_token_trees(/* is_delimited */ true);
+        if let Err(errs) = res {
+            return Err(self.unclosed_delim_err(tts, errs));
+        }
+
+        // Expand to cover the entire delimited token tree.
+        let delim_span = DelimSpan::from_pair(pre_span, self.token.span);
+        let sm = self.string_reader.psess.source_map();
+
+        let close_spacing = match self.token.kind {
+            // Correct delimiter.
+\end{verbatim}
+Neobradjene zagrade se čuvaju u strukturi \verb|TokenTreeDiagInfo| u polju \verb|open_braces|.
+Utvrdjeno je da po uspešnom završetku obrade poziva funkcije \verb|lex_token_trees| 
+trenutni token je pozicioniran na zatvoreni tip delimiter-a. To omogućava validaciju 
+pravilnog završetka zagrada.
+
+
+\newpage
 \section{Reference}
 [1] MSRC, “A proactive approach to more secure code | MSRC Blog | 
 Microsoft Security Response Center,” Microsoft.com, Jul. 16, 2019. 
