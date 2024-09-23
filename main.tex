@@ -1,6 +1,20 @@
 \documentclass{article}
 \usepackage{graphicx} % Required for inserting images
 \usepackage{hyperref}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{minted}
+\usepackage[
+    protrusion=true,
+    activate={true,nocompatibility},
+    final,
+    tracking=true,
+    kerning=true,
+    spacing=true,
+    factor=1100]{microtype}
+\SetTracking{encoding={*}, shape=sc}{40}
+\renewcommand{\listingscaption}{Izvorni kod}
+\renewcommand{\listoflistingscaption}{Spisak izvornih kodova}
 
 \title{Reprezentacija izvornog koda - Rust kompajler}
 \author{Aleksa Bajat}
@@ -112,8 +126,12 @@ Reprezentacije izvornog koda Rust-a se dele na:
 
 \subsection{Tok tokena}
 
-Rust kompajler poseduje dva leksera \verb|rustc_lexer| i \verb|rustc_parse::lexer|. Oba su bitna 
-jer \verb|rusc_parse::lexer| koristi \verb|rustc_lexer| tokom kompajliranja.
+Programski jezici se generalno odlučuju da implementiraju lekser kao konačni automat uz pomoć alata kao što je
+\verb|Flex|. Ipak, u jeziku Rust lekser je implementiran ručno. Ovo omogućava finu granularnost i visoku 
+kontrolu nad procesom tokenizacije. Sa obzirom da je cilj Rust-a transparentne i veoma korisne poruke o 
+grešci, ovo je veoma smislena implementaciona odluka.
+Kompajler poseduje naizgled dva leksera. Lekser niskog nivoa je \verb|rustc_lexer|, a lekser visokog nivoa je \verb|rustc_parse::lexer|. 
+Obe implementacije su važne jer \verb|rusc_parse::lexer| koristi \verb|rustc_lexer| tokom kompajliranja.
 
 \subsubsection{rustc\_lexer}
 
@@ -122,7 +140,8 @@ funkcionalnosti potrebne prilikom prikupljanja leksema.
 Glavna funkcija iz ovog modula jeste \verb|tokenize| koja na osnovu celokupnog teksta 
 izvornog koda dobavlja skup tokena tj. leksema.
 
-\begin{verbatim}
+\begin{listing}[H]
+\begin{minted}{rust}
 /// Creates an iterator that produces tokens from the input string.
 pub fn tokenize(input: &str) -> impl Iterator<Item = Token> + '_ {
     let mut cursor = Cursor::new(input);
@@ -131,14 +150,17 @@ pub fn tokenize(input: &str) -> impl Iterator<Item = Token> + '_ {
         if token.kind != TokenKind::Eof { Some(token) } else { None }
     })
 }
-\end{verbatim}
+\end{minted}
+\caption{Ulazna funkcija leksera}
+\end{listing}
 
 Implementacija je bazirana na kursoru i unutar te strukture se nalazi celokupna logika leksera. 
 Kursor je realizovan pomoću Rust-ovog iteratora i na osnovu njega prati trenutnu poziciju 
-unutar izvornog koda. Veoma je bitna mogućnost gledanja ispred (\verb|look-ahead|) koja omogućuje 
+unutar izvornog koda. Veoma je bitna mogućnost gledanja ispred (\verb|look-ahead|) koja omogućava 
 izvršavanje u jednom prolasku.
 
-\begin{verbatim}
+\begin{listing}[H]
+\begin{minted}{rust}
     /// Peeks the first symbol from the input stream without consuming it.
     pub fn first(&self) -> char {
         // `.next()` optimizes better than `.nth(0)`
@@ -161,28 +183,33 @@ izvršavanje u jednom prolasku.
         iter.next();
         iter.next().unwrap_or(EOF_CHAR)
     }
-\end{verbatim}
-Kloniranje iteratora je jeftina operacija jer se svodi na kopiranje meta podataka
-kao što je trenutna adresa.
+\end{minted}
+\caption{"Look-ahead" mehanizam}
+\end{listing}
+Kloniranje iteratora je jeftina operacija jer se svodi na kopiranje trenutne adresa.
 
 \verb|Token| sadrži samo informaciju o tipu token-a i njegovu dužinu ali ne i 
 sam podatak.
 
-\begin{verbatim}
+\begin{listing}[H]
+\begin{minted}{rust}
 #[derive(Debug)]
 pub struct Token {
     pub kind: TokenKind,
     pub len: u32,
 }   
-\end{verbatim}
+\end{minted}
+\caption{Definicija "Token" strukture}
+\end{listing}
 
 \subsubsection{rustc\_parse::lexer}
 
 Lekser višeg nivoa \verb|rustc_parse::lexer| koristi \verb|rustc_lexer| prilikom izvršavanja sopstvenih
-operacija. Bitna razlika je što se sadržaj token analizira i postavlja u kontekst.
+operacija. Bitna razlika je to što se sadržaj token analizira i postavlja u kontekst.
 Lekser višeg nivoa koristi kursor svog prethodnika za dobavljanje leksema ali unutar strukture \verb|StringReader|. 
 
-\begin{verbatim}
+\begin{listing}[H]
+\begin{minted}{rust}
     struct StringReader<'psess, 'src> {
         psess: &'psess ParseSess,
         start_pos: BytePos,
@@ -193,7 +220,9 @@ Lekser višeg nivoa koristi kursor svog prethodnika za dobavljanje leksema ali u
         nbsp_is_whitespace: bool,
         last_lifetime: Option<Span>,
     }
-\end{verbatim}
+\end{minted}
+\caption{Definicija "StringReader" strukture}
+\end{listing}
 \verb|StringReader| prati trenutnu poziciju unutar izvornog koda, a kursor 
 dobavlja token koji ima odredjenu dužinu. Sadržaj tokena je niz karaktera sa početkom u \verb|pos|,
 dužine od \verb|token.len|. 
@@ -214,25 +243,37 @@ strukture. Ne internira se svaki token, već samo tokeni koji imaju varijabilnu 
 Mapiranje tokena iz leksera u tip tokena iz apstraktnog sintaksnog stabla je trivialno.
 Za proste tipove vrši se jedan na jedan konverzija.
 
-\begin{verbatim}
+\begin{listing}[H]
+\begin{minted}{rust}
     rustc_lexer::TokenKind::Semi => token::Semi,
     rustc_lexer::TokenKind::Comma => token::Comma,
     rustc_lexer::TokenKind::Dot => token::Dot,
-\end{verbatim}
+\end{minted}
+\caption{Prevodjenje tokena iz leksera u AST tokene}
+\end{listing}
 Za tipove koji imaju sadržaj u vidu nizova karaktera, sadržaj se internira i prenosi 
-u novi token putem simbola. Apstraktno sintaksno stablo se često koristi i zbog tog razloga 
+u novi token putem simbola. Apstraktno sintaksno stablo se često koristi prilikom kompajliranja i zbog tog razloga 
 mora biti memorijski optimizovano.
 
-\begin{verbatim}
+\begin{listing}[H]
+\begin{minted}{rust}
     let ident = Symbol::intern(lifetime_name);
     token::Lifetime(ident, IdentIsRaw::No)
-\end{verbatim}
+\end{minted}
+\caption{Interniranje literala}
+\end{listing}
 U primeru se može uočiti da \verb|ast_token|-i po potrebi mogu da imaju i dodatne parametre.
 
+Tok tokena je skup stabala tokena od kojih je svako stablo sačinjeno od skupa tokena.  
+Rezolucija zagrada je proces unutar kog se validira da li je svaka zagrada pravilno zatvorena.
 Rezolucija zagrada se dešava u samom vrhu procesa \verb|rustc_parser::lexer|-a 
-za vreme kreiranja toka tokena. U kontekstu kompajlera zagrade se nazivaju delimiteri.
-Svaki tip otvorenog delimitera mora biti zatvoren delimiterom istog tipa koji je zatvoren.
-\begin{verbatim}
+za vreme kreiranja toka tokena. U kontekstu kompajlera zagrade se nazivaju delimiteri. 
+Svaki otvoreni tip delimitera mora biti zatvoren delimiterom istog tipa koji je zatvoren.
+Na primer, vitičasta zagrada je tip delimitera koja može biti otvoren (\{) ili zatvoren (\}) tj.
+svaka otvorena vitičasta zagrada mora biti zatvorena zatvorenom vitičastom zagradom.
+
+\begin{listing}[H]
+\begin{minted}{rust}
 fn lex_token_trees(
     &mut self,
     is_delimited: bool,
@@ -270,7 +311,9 @@ fn lex_token_trees(
                 let (this_tok, this_spacing) = self.bump(true);
                 buf.push(TokenTree::Token(this_tok, this_spacing));
     } } } }
-\end{verbatim}
+\end{minted}
+\caption{Generisanje stabla tokena}
+\end{listing}
 
 \newpage
 
@@ -284,8 +327,9 @@ Nailaskom na \verb|token::Eof| ili \verb|token::CloseDelim| se završava prikupl
 Ovo su veoma korisni granični slučajevi koji omogućavaju rekurziju. 
 
 Obrada otvorenog tipa delimitera u pozadini poziva funkciju \verb|lex_token_trees| koji obradjuje
-tok tokena izmedju novog para zagrada.
-\begin{verbatim}
+stablo tokena (deo toka tokena) izmedju novog para zagrada.
+\begin{listing}[H]
+\begin{minted}{rust}
     fn lex_token_tree_open_delim(
         &mut self,
         open_delim: Delimiter,
@@ -309,12 +353,55 @@ tok tokena izmedju novog para zagrada.
         let sm = self.string_reader.psess.source_map();
 
         let close_spacing = match self.token.kind {
-            // Correct delimiter.
-\end{verbatim}
+        .
+        .
+        .
+\end{minted}
+\caption{Parsiranje stabla tokena}
+\end{listing}
+
 Neobradjene zagrade se čuvaju u strukturi \verb|TokenTreeDiagInfo| u polju \verb|open_braces|.
-Utvrdjeno je da po uspešnom završetku obrade poziva funkcije \verb|lex_token_trees| 
-trenutni token je pozicioniran na zatvoreni tip delimiter-a. To omogućava validaciju 
+Utvrdjeno je da će po uspešnom završetku izvršavanja funkcije \verb|lex_token_trees| 
+trenutni token biti pozicioniran na zatvoreni tip delimiter-a. To omogućava validaciju 
 pravilnog završetka zagrada.
+
+\subsubsection{rustc::parser}
+
+Parser jezika Rust uz pomoć toka tokena iz leksera generiše apstraktno sintaksno stablo (AST). 
+Algoritam \verb|recursive-descent| se koristi tokom procesa parsiranja. Ovo je jedna od najjednostavnijih
+tehnika parsiranja koja se koristi u praksi. Ovakvi parseri se takodje nazivaju \verb|top-down| parseri 
+jer konstruišu stablo od gore ka dole [2]. 
+
+Parser omogućava da se izvorni fajl pretvori u tok tokena, nakon čega se kreira parser za taj tok tokena, i 
+potom izvršava da bi se dobio \verb|Crate| tj. početni čvor AST-a.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+#[derive(Clone, Encodable, Decodable, Debug)]
+pub struct Crate {
+    pub attrs: AttrVec,
+    pub items: ThinVec<P<Item>>,
+    pub spans: ModSpans,
+    pub id: NodeId,
+    pub is_placeholder: bool,
+}
+\end{minted}
+\caption{Definicija "Crate" strukture}
+\end{listing}
+
+\begin{listing}[H]
+\begin{minted}{rust}
+pub fn parse_crate_mod(&mut self) -> PResult<'a, ast::Crate> {
+    let (attrs, items, spans) = self.parse_mod(&token::Eof)?;
+    Ok(ast::Crate { attrs, items, spans, 
+       id: DUMMY_NODE_ID, is_placeholder: false })
+}
+\end{minted}
+\caption{Ulazna funkcija parsera}
+\end{listing}
+
+
+
 
 
 \newpage
@@ -323,5 +410,9 @@ pravilnog završetka zagrada.
 Microsoft Security Response Center,” Microsoft.com, Jul. 16, 2019. 
 \url{https://msrc.microsoft.com/blog/2019/07/a-proactive-approach-to-more-secure-code/} 
 (pristupljeno Sep. 08, 2024).
+
+[2] “Parsing” Rochester.edu, 2024.
+\url{https://www.cs.rochester.edu/u/nelson/courses/csc_173/grammars/parsing.html#:~:text=Recursive%2Ddescent%20parsing%20is%20one,non%2Dterminal%20with%20a%20procedure}
+(pristupljeno Sep. 21, 2024).
 
 \end{document}
