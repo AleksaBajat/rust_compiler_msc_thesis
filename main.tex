@@ -109,6 +109,17 @@ ispoljavaju preko -Z (nestabilnih) zastavica. Mogu se prikazati upotrebom:
     rustc -Z help # unstable
 \end{verbatim}
 
+U Rustu, \verb|Crate| je najmanja jedinica organizacije koda. Postoje dva osnovna tipa:
+\begin{enumerate}
+    \item Izvršni programi - sadrže funkciju \verb|main| i mogu da se izvršavaju.
+    \item Bilioteke - pružaju funkcionalnosti koje se mogu koristiti u drugim \verb|Crate|-ovima.
+\end{enumerate} 
+
+Rustc se odlikuje sa dva načina kompilacije: 
+\begin{enumerate}
+    \item Kompletna - \verb|Crate| se kompajlira od početka svaki put.
+    \item Inkrementalna - prilikom kompajliranja beleži se istorija koja se koristi u svakom narednom procesu kompajliranja (dobitak u brzini na uštrb memorije).
+\end{enumerate}
 
 \section{Reprezentacije izvornog koda}
 
@@ -126,10 +137,10 @@ Reprezentacije izvornog koda Rust-a se dele na:
 
 \subsection{Tok tokena}
 
-Programski jezici se generalno odlučuju da implementiraju lekser kao konačni automat uz pomoć alata kao što je
+Uobičajno je da se lekseri programskih jezika implementiraju kao konačni automat uz pomoć alata kao što je
 \verb|Flex|. Ipak, u jeziku Rust lekser je implementiran ručno. Ovo omogućava finu granularnost i visoku 
-kontrolu nad procesom tokenizacije. Sa obzirom da je cilj Rust-a transparentne i veoma korisne poruke o 
-grešci, ovo je veoma smislena implementaciona odluka.
+kontrolu nad procesom tokenizacije. Sa obzirom da je cilj Rust-a transparentne i korisne poruke o 
+grešci, ovo je vrlo promišljena implementaciona odluka.
 Kompajler poseduje naizgled dva leksera. Lekser niskog nivoa je \verb|rustc_lexer|, a lekser visokog nivoa je \verb|rustc_parse::lexer|. 
 Obe implementacije su važne jer \verb|rusc_parse::lexer| koristi \verb|rustc_lexer| tokom kompajliranja.
 
@@ -365,15 +376,37 @@ Utvrdjeno je da će po uspešnom završetku izvršavanja funkcije \verb|lex_toke
 trenutni token biti pozicioniran na zatvoreni tip delimiter-a. To omogućava validaciju 
 pravilnog završetka zagrada.
 
-\subsubsection{rustc::parser}
+\newpage
+\subsection{Apstraktno Sintaksno Stablo}
 
 Parser jezika Rust uz pomoć toka tokena iz leksera generiše apstraktno sintaksno stablo (AST). 
 Algoritam \verb|recursive-descent| se koristi tokom procesa parsiranja. Ovo je jedna od najjednostavnijih
 tehnika parsiranja koja se koristi u praksi. Ovakvi parseri se takodje nazivaju \verb|top-down| parseri 
 jer konstruišu stablo od gore ka dole [2]. 
 
-Parser omogućava da se izvorni fajl pretvori u tok tokena, nakon čega se kreira parser za taj tok tokena, i 
-potom izvršava da bi se dobio \verb|Crate| tj. početni čvor AST-a.
+Parser koristi prethodno pomenuti tok tokena da bi kreirao kursor nad stablom tokena \verb|TokenTreeCursor|.
+\verb|TokenStream| poseduje implementaciju \verb|into_tree| koji transformiše tip dobijen iz leksera
+u tip pogodan parseru.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+pub fn into_trees(self) -> TokenTreeCursor {
+    TokenTreeCursor::new(self)
+}
+
+impl TokenTreeCursor {
+    fn new(stream: TokenStream) -> Self {
+        TokenTreeCursor { stream, index: 0 }
+    }
+    ...
+}
+\end{minted}
+\caption{Konverzija iz "TokenStream" u "TokenTreeCursor"}
+\end{listing}
+Jednostavnije je iterirati kroz stabla tokena sekvencijalno u odnosu na strukturu koja liči na kanape.
+
+Za razliku od leksera, parser poseduje konstrukte koji su dosta složeniji od jednog tokena, kao što su 
+strukture, enumeracije i slično (reč-rečenica poredjenje). Izvorni čvor \verb|AST|-a je \verb|Crate|.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -389,6 +422,60 @@ pub struct Crate {
 \caption{Definicija "Crate" strukture}
 \end{listing}
 
+Najbitnija polja su atributi \verb|attrs| i stavke \verb|items|. Atributi mogu biti spoljašnji ili unutrašnji.
+Koriste se da bi korisnik pružio dodatne instrukcije kompajleru. 
+Dodatne instrukcije mogu biti trivijalne poput dozvoljavanja
+nekorišćenog koda, ali mogu biti i kompleksnije u vidu implementacije osobina 
+\verb|trait|-ova (veoma slična funkcionalnost u poredjenju sa interfejsom u drugim jezicima). 
+
+
+\begin{listing}[H]
+\begin{minted}{rust}
+// Spoljašnji atribut se primenjuje na tip koji sledi 
+// nakon atributa koji pri tome nije atribut.
+#[allow(dead_code)] 
+fn main() {
+    // Unutrašnji atribut.
+    // Primenjuje se na vlasnika lokalnog opsega. 
+    #![allow(unused_variables)]
+    let x = 10;  
+}
+\end{minted}
+\caption{Definicija "Item" strukture}
+\end{listing}
+
+
+Stavke su grupacije tokena iz leksera koje tako grupisane imaju semantiku. Iz perspektive koda 
+veoma se malo razlikuje od samog \verb|Crate|-a. Svaka stavka poseduje identifikator \verb|NodeId| 
+koji predstavlja sekvencijalni broj stavke unutar \verb|Crate|-a. Ovo znači da ukoliko se usred stabla 
+obriše ili izgeneriše nova stavka, svaki čvor nakon tog dela stabla mora ponovo da izgeneriše svoj redni broj.
+Samim time apstraktno sintaksno stablo nije korisno prilikom inkrementalne kompilacije jer su identifikatori
+volotilni. Svaka stavka takodje sadrži \verb|Span|. Ovo je tip koji odredjuje početnu i krajnju poziciju 
+stavke unutar izvornog koda.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+#[derive(Clone, Encodable, Decodable, Debug)]
+pub struct Item<K = ItemKind> {
+    pub attrs: AttrVec,
+    pub id: NodeId,
+    pub span: Span,
+    pub vis: Visibility,
+    pub ident: Ident,
+    pub kind: K,
+    pub tokens: Option<LazyAttrTokenStream>,
+}
+\end{minted}
+\caption{Definicija "Item" strukture}
+\end{listing}
+
+U odnosu na vrednost tipa \verb|kind|, stavke mogu ili ne mogu da poseduju atribute. Vidljivost je 
+još jedan bitan aspekt svake stavke.
+
+Prilikom poziva parsiranja, jedini fajl koji se odmah procesira jeste glavni \verb|main| fajl.
+Makroi i drugi moduli se parsiraju pomoću procesa ekspanzije. 
+
+
 \begin{listing}[H]
 \begin{minted}{rust}
 pub fn parse_crate_mod(&mut self) -> PResult<'a, ast::Crate> {
@@ -401,7 +488,31 @@ pub fn parse_crate_mod(&mut self) -> PResult<'a, ast::Crate> {
 \end{listing}
 
 
+\newpage
+\subsection{Posredna Reprezentacija Visokog Nivoa - HIR (High-Level Intermediate Representation)}
 
+Ekspanzija je proces tokom kog se dopunjuje apstraktno sintaksno stablo. 
+Svi makroi su prošireni (odatle ekspanzija) na regularni izvorni kod. 
+Na mestima gde se koriste moduli, izvorni kod modula je umetnut (\verb|inlined|).
+Deo AST stabla će postati samo funkcije drugih modula koje su implicitno ili eskplicitno korišćene 
+od strane glavnog modula, sve ostalo će biti ignorisano.
+
+Posredna reprezentacija visokog nivoa je primarna posredna reprezentacija koja se koristi 
+u većinskom delu rustc kompajlera. Ovo je reprezentacija apstraktnog sintaksnog stabla 
+nakon parsiranja, ekpanzije makroa, rezolucije imena tj. procesa snižavanja (\verb|lowering|).
+Tokom procesa snižavanja, neke forme izražavanja bivaju posjednostavljene (\verb|desugared|).
+Na primer, for petlje se ne pojavljuju u HIR-u jer su konvertovane u loop.
+
+Glavni čvor HIR-a se isto kao i kod AST-a naziva \verb|Crate| ali ima drugačije podatke,
+i sadrži veliki broj mapa koje služe da omoguće lakši pristup sadržaju.
+
+HIR poseduje značajan broj identifikatora:
+- DefId - referencira definiciju unutar bilo kog \verb|Crate|-a.
+- LocalDefId - referencira definiciju unutar trenutno kompajliranog \verb|Crate|-a.
+- HirId - referencira bilo koji čvor u HIR-u.
+
+Većinu vremena HIR-u se pristupa pomoću HIR mape. HIR mapa sadrži brojne metode 
+koje na osnovu različitih tipova identifikatora dobavljaju podatke.
 
 
 \newpage
