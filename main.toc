@@ -4,7 +4,9 @@
 \contentsline {section}{\numberline {4}Reprezentacije izvornog koda}{5}{section.4}%
 \contentsline {subsection}{\numberline {4.1}Tok tokena}{6}{subsection.4.1}%
 \contentsline {subsubsection}{\numberline {4.1.1}rustc\_lexer}{6}{subsubsection.4.1.1}%
-\contentsline {subsubsection}{\numberline {4.1.2}rustc\_parse::lexer}{7}{subsubsection.4.1.2}%
+\contentsline {subsubsection}{\numberline {4.1.2}rustc\_parse::lexer}{8}{subsubsection.4.1.2}%
 \contentsline {subsection}{\numberline {4.2}Apstraktno Sintaksno Stablo}{12}{subsection.4.2}%
-\contentsline {subsection}{\numberline {4.3}Posredna Reprezentacija Visokog Nivoa - HIR (High-Level Intermediate Representation)}{15}{subsection.4.3}%
-\contentsline {section}{\numberline {5}Reference}{16}{section.5}%
+\contentsline {subsection}{\numberline {4.3}Posredna Reprezentacija Visokog Nivoa - HIR (High-Level Intermediate Representation)}{16}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Tipizirana Posredna Reprezentacija Visokog Nivoa - THIR (Typed High-Level Intermediate Representation)}{17}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Posredna Reprezentacija Srednjeg Nivoa - MIR (Mid-Level Intermediate Representation)}{18}{subsection.4.5}%
+\contentsline {section}{\numberline {5}Reference}{19}{section.5}%

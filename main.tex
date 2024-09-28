@@ -165,6 +165,7 @@ pub fn tokenize(input: &str) -> impl Iterator<Item = Token> + '_ {
 \caption{Ulazna funkcija leksera}
 \end{listing}
 
+\newpage
 Implementacija je bazirana na kursoru i unutar te strukture se nalazi celokupna logika leksera. 
 Kursor je realizovan pomoću Rust-ovog iteratora i na osnovu njega prati trenutnu poziciju 
 unutar izvornog koda. Veoma je bitna mogućnost gledanja ispred (\verb|look-ahead|) koja omogućava 
@@ -213,6 +214,7 @@ pub struct Token {
 \caption{Definicija "Token" strukture}
 \end{listing}
 
+\newpage
 \subsubsection{rustc\_parse::lexer}
 
 Lekser višeg nivoa \verb|rustc_parse::lexer| koristi \verb|rustc_lexer| prilikom izvršavanja sopstvenih
@@ -380,6 +382,8 @@ pravilnog završetka zagrada.
 \subsection{Apstraktno Sintaksno Stablo}
 
 Parser jezika Rust uz pomoć toka tokena iz leksera generiše apstraktno sintaksno stablo (AST). 
+Prilikom poziva parsiranja, jedini fajl koji se odmah procesira jeste glavni \verb|main| fajl, potpuno stablo
+nastaje putem ekspanzije i rezolucije imena.
 Algoritam \verb|recursive-descent| se koristi tokom procesa parsiranja. Ovo je jedna od najjednostavnijih
 tehnika parsiranja koja se koristi u praksi. Ovakvi parseri se takodje nazivaju \verb|top-down| parseri 
 jer konstruišu stablo od gore ka dole [2]. 
@@ -422,6 +426,8 @@ pub struct Crate {
 \caption{Definicija "Crate" strukture}
 \end{listing}
 
+\newpage
+
 Najbitnija polja su atributi \verb|attrs| i stavke \verb|items|. Atributi mogu biti spoljašnji ili unutrašnji.
 Koriste se da bi korisnik pružio dodatne instrukcije kompajleru. 
 Dodatne instrukcije mogu biti trivijalne poput dozvoljavanja
@@ -441,7 +447,7 @@ fn main() {
     let x = 10;  
 }
 \end{minted}
-\caption{Definicija "Item" strukture}
+\caption{Spoljašnji i unutrašnji atributi}
 \end{listing}
 
 
@@ -451,7 +457,7 @@ koji predstavlja sekvencijalni broj stavke unutar \verb|Crate|-a. Ovo znači da 
 obriše ili izgeneriše nova stavka, svaki čvor nakon tog dela stabla mora ponovo da izgeneriše svoj redni broj.
 Samim time apstraktno sintaksno stablo nije korisno prilikom inkrementalne kompilacije jer su identifikatori
 volotilni. Svaka stavka takodje sadrži \verb|Span|. Ovo je tip koji odredjuje početnu i krajnju poziciju 
-stavke unutar izvornog koda.
+stavke unutar izvornog koda. U odnosu na vrednost tipa \verb|kind|, stavke mogu ili ne mogu da poseduju atribute. 
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -469,13 +475,6 @@ pub struct Item<K = ItemKind> {
 \caption{Definicija "Item" strukture}
 \end{listing}
 
-U odnosu na vrednost tipa \verb|kind|, stavke mogu ili ne mogu da poseduju atribute. Vidljivost je 
-još jedan bitan aspekt svake stavke.
-
-Prilikom poziva parsiranja, jedini fajl koji se odmah procesira jeste glavni \verb|main| fajl.
-Makroi i drugi moduli se parsiraju pomoću procesa ekspanzije. 
-
-
 \begin{listing}[H]
 \begin{minted}{rust}
 pub fn parse_crate_mod(&mut self) -> PResult<'a, ast::Crate> {
@@ -488,42 +487,188 @@ pub fn parse_crate_mod(&mut self) -> PResult<'a, ast::Crate> {
 \end{listing}
 
 
+Deo formiranja apstraktnog sintaksnog stabla jeste rezolucija imena.
+U programima se referenciraju funkcije, varijable i tipovi na osnovu imena. Ova imena nisu uvek jedinstvena.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+type a = u32;
+let a: a = 1;
+let b: a = 5;
+\end{minted}
+\caption{Rezolucija imena}
+\label{lst:resolution}
+\end{listing}
+
+U izvornom kodu \ref{lst:resolution} kako znamo da li je u liniji 3 "a" tip ili vrednost 1?
+Ovakvi konflikti se rešavaju prilikom rezolucije imena. U ovom slučaju imena tipova i promenljivih se nalaze 
+u različitim imenskim prostorima (\verb|namespaces|) i zbog toga mogu da koegzistiraju.
+Rezolucija imena se izvodi iz dva faze. Prva faza se dešava za vreme ekspanzije (više o tome u daljem tekstu) 
+gde se obradjuju samo \verb|import|-i. Druga faza se dešava nakon ekspanzije gde se obradjuje celokupno 
+sintaksno stablo počevši od vrha pa na dole. 
+
+Imena su validna u različitim delovima izvornog koda. Da bi se 
+vreme života (\verb|scope|) nekog imena proverilo uvodi se koncept rebara (\verb|rib|). Svaki put kada se 
+set vidljivih imena potencijalno menja novo rebro se gura na stek. Primeri situacija u kojima se dodaje 
+novo rebro:
+\begin{enumerate}
+    \item Očigledna mesta kao što su vitičaste zagrade, funkcije, moduli.
+    \item Prilikom poziva \verb|let| jer se ime može redefinisati (\verb|shadowing|).
+    \item Početak proširenja makroa. 
+\end{enumerate}
+Potraga za imenom se izvodi od najdubljeg rebra (vrh steka) ka najplićem. 
+Redosled je veoma bitan zato što se ovakvom pretragom izbegava greška 
+ukoliko je neko ime redefinisano.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+let a: u32 = 1;
+let a: i32 = -1;
+\end{minted}
+\caption{"Shadowing"}
+\label{lst:shadowing}
+\end{listing}
+\newpage
+
+Jezici kao što je C pored kompajlera sadrže pre-procesor koji prikuplja izvorni kod. 
+Prilikom prikupljanja izvornog koda skraćenice (makroi) se proširuju na izraze programskog jezika. 
+Rust se odlikuje veoma moćnim makroima ali ne poseduje pre-procesor. Transformacija skraćenica se vrši 
+putem ekspanzije.  Ekspanzija je proces tokom kog se dopunjuje apstraktno sintaksno stablo
+proširivnajem makroa i umetanjem modula (\verb|inlining|). Prilikom parsiranja umesto 
+modula i makroa se postavljaju AST fragmenti. Ovi fragmenti su početne tačke algoritma ekspanzije.
+Kreira se red čekanja neproširenih makroa. Jedan po jedan se uzimaju iz reda čekanja, vriši se rezolucija imena,
+proširuju se i integrišu nazad u stablo. U slučaju da se nema napretka (loše napisan kod), vraća se greška.
+
+Pre nego što počne prelazak u sledeći posredni oblik AST stablo se validira. 
+Tokom prolaska se proverava da li je stablo sintaktički validno, bez ikakvih kompleksnih analiza,
+rezolucije imena ili provera tipova. Ovo nije moguće učiniti prilikom parsiranja jer makro atributi 
+omogućavaju odredjene delove netačne sintakse kao što je funkcija bez tela van definicije osobine (\verb|trait|) \ref{lst:validate}.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+#[attribute]
+mod foo {
+    fn missing_body();
+}
+\end{minted}
+\caption{"Netačna sintaksa pre ekspanzije"}
+\label{lst:validate}
+\end{listing}
+
+Apstraktno sintaksno stablo pre i posle ekspanzije nekog \verb|Crate|-a se može analizirati pomoću 
+nestabilnih \verb|-Z| zastavica \ref{lst:rustc_ast}.
+
+
+\begin{listing}[H]
+\begin{minted}{bash}
+cargo rustc -- -Z unpretty=ast
+cargo rustc -- -Z unpretty=ast,expanded
+\end{minted}
+\caption{"Prikaz apstraktnog sintaksnog stabla"}
+\label{lst:rustc_ast}
+\end{listing}
+
 \newpage
 \subsection{Posredna Reprezentacija Visokog Nivoa - HIR (High-Level Intermediate Representation)}
 
-Ekspanzija je proces tokom kog se dopunjuje apstraktno sintaksno stablo. 
-Svi makroi su prošireni (odatle ekspanzija) na regularni izvorni kod. 
-Na mestima gde se koriste moduli, izvorni kod modula je umetnut (\verb|inlined|).
-Deo AST stabla će postati samo funkcije drugih modula koje su implicitno ili eskplicitno korišćene 
+Posredna reprezentacija visokog nivoa je primarna posredna reprezentacija koja se koristi 
+u većinskom delu \verb|rustc| kompajlera. HIR je posledica snižavanja (\verb|lowering|). 
+Tokom procesa snižavanja, neke forme izražavanja bivaju pojednostavljene (\verb|desugared|):
+\begin{enumerate}
+    \item Zagrade se uklanjaju jer struktura stabla eksplicitno odredjuje redosled operacija.
+    \item for petlje su konvertovane u while(let) petlje.
+    \item if let se konvertuje u match.
+    \item impl u parametrima funkcije se konvertuje u generičke argumente.
+\end{enumerate}
+HIR prikazuje samo trenutno stanje \verb|Crate|-a.
+Samim time sadrži samo funkcije drugih modula koje su implicitno ili eskplicitno korišćene 
 od strane glavnog modula, sve ostalo će biti ignorisano.
 
-Posredna reprezentacija visokog nivoa je primarna posredna reprezentacija koja se koristi 
-u većinskom delu rustc kompajlera. Ovo je reprezentacija apstraktnog sintaksnog stabla 
-nakon parsiranja, ekpanzije makroa, rezolucije imena tj. procesa snižavanja (\verb|lowering|).
-Tokom procesa snižavanja, neke forme izražavanja bivaju posjednostavljene (\verb|desugared|).
-Na primer, for petlje se ne pojavljuju u HIR-u jer su konvertovane u loop.
+Glavni čvor HIR-a se isto kao i kod AST-a naziva \verb|Crate| ali sadrži drugačije podatke,
+veliki broj mapa koje služe da omoguće lakši pristup sadržaju.
 
-Glavni čvor HIR-a se isto kao i kod AST-a naziva \verb|Crate| ali ima drugačije podatke,
-i sadrži veliki broj mapa koje služe da omoguće lakši pristup sadržaju.
-
-HIR poseduje značajan broj identifikatora:
-- DefId - referencira definiciju unutar bilo kog \verb|Crate|-a.
-- LocalDefId - referencira definiciju unutar trenutno kompajliranog \verb|Crate|-a.
-- HirId - referencira bilo koji čvor u HIR-u.
+HIR poseduje proširen spektar identifikatora:
+\begin{enumerate}
+    \item DefId - referencira definiciju unutar bilo kog \verb|Crate|-a.
+    \item LocalDefId - referencira definiciju unutar trenutno kompajliranog \verb|Crate|-a.
+    \item HirId - referencira bilo koji čvor u HIR-u.
+\end{enumerate}
 
 Većinu vremena HIR-u se pristupa pomoću HIR mape. HIR mapa sadrži brojne metode 
 koje na osnovu različitih tipova identifikatora dobavljaju podatke.
 
+\newpage
+\subsection{Tipizirana Posredna Reprezentacija Visokog Nivoa - THIR (Typed High-Level Intermediate Representation)}
+
+Tipizirani HIR je posredna reprezentacija izvornog koda koja se generiše tokom provere tipova, jer je potrebno
+da su tipovi unutar celog stabla popunjeni. THIR sadrži samo tela (obično tela funkcija) tj. izvršni kod.
+Posledica ovoga jeste nedostatak reprezentacija struktura i osobina. 
+Rust ima odliku da ukoliko se koristi neki vid provere šablona (\verb|pattern matching|) svaki tip unutar 
+šablona mora biti pokriven \ref{lst:pattern_matching}. Proveru da li je svaki tip obradjen izvršava THIR.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+pub enum IpAddrKind {
+    V4,
+    V6,
+}
+
+fn main() {
+    let x = IpAddrKind::V4;
+    match x {
+        IpAddrKind::V4 => println!("Ovo je IPv4 adresa."), 
+        // Pokriven IpAddrKind::V4
+        IpAddrKind::V6 => println!("Ovo je IPv6 adresa.") 
+        // Pokriven IpAddrKind::V6
+        // Da je postojao IpAddrKind::V7 Rust bi zahtevao 
+        // da i ta varijanta bude obradjena.
+    }
+}
+\end{minted}
+\caption{Provera šablona}
+\label{lst:pattern_matching}
+\end{listing}
+
+Za razliku od HIR-a koji je perzistiran tokom celokupnog izvršavanja kompajlera, THIR se odbacuje momenta
+kada više nema upotrebnu vrednost. Pored toga što su svi tipovi čvorova prisutni, THIR se odlukuje dodatnim 
+pojednostavljivanjem koda:
+\begin{enumerate}
+    \item Automatska referenciranja i dereferenciranja su eksplicitna.
+    \item Pozivi metoda i opterećeni operatori su konvertovani u obične pozive funkcija. 
+    \item Obim životnog veka je eksplicitan.
+\end{enumerate}
+
+% Izrazi, iskazi i \verb|match| ruke se čuvaju zasebno. 
+
+Pojednostavljenje čini THIR podobnim za proveru nebezbednog koda jer fundamentalno poseduje manje opcija, 
+nebezbedni pozivi metoda i nebezbedni pozivi funkcija imaju identičnu reprezentaciju. Ova provera 
+iskazuje grešku ako je nebezbedna operacija korišćena van \verb|unsafe| opsega.
+
+
+\newpage
+\subsection{Posredna Reprezentacija Srednjeg Nivoa - MIR (Mid-Level Intermediate Representation)}
 
 \newpage
 \section{Reference}
-[1] MSRC, “A proactive approach to more secure code | MSRC Blog | 
-Microsoft Security Response Center,” Microsoft.com, Jul. 16, 2019. 
-\url{https://msrc.microsoft.com/blog/2019/07/a-proactive-approach-to-more-secure-code/} 
-(pristupljeno Sep. 08, 2024).
 
-[2] “Parsing” Rochester.edu, 2024.
-\url{https://www.cs.rochester.edu/u/nelson/courses/csc_173/grammars/parsing.html#:~:text=Recursive%2Ddescent%20parsing%20is%20one,non%2Dterminal%20with%20a%20procedure}
-(pristupljeno Sep. 21, 2024).
+\begin{thebibliography}
+    \raggedright
+\bibitem{msrc} 
+    MSRC, “A proactive approach to more secure code | MSRC Blog | 
+    Microsoft Security Response Center,” Microsoft.com, Jul. 16, 2019. 
+    \url{https://msrc.microsoft.com/blog/2019/07/a-proactive-approach-to-more-secure-code/} 
+    (pristupljeno Sep. 08, 2024).
 
+    \bibitem{parsing} 
+    “Parsing” Rochester.edu, 2024.
+    \url{https://www.cs.rochester.edu/u/nelson/courses/csc_173/grammars/parsing.html#:~:text=Recursive%2Ddescent%20parsing%20is%20one,non%2Dterminal%20with%20a%20procedure} 
+    (pristupljeno Sep. 21, 2024).
+
+    \bibitem{dragonbook} 
+    A. V. Aho, M. S. Lam, R. Sethi, and J. D. Ullman, \emph{Compilers: Principles, Techniques, and Tools}, 2nd ed. Boston, MA, USA: Addison-Wesley, 2006.
+
+    \bibitem{rust-guide} 
+    “Getting Started - Rust Compiler Development Guide,” Rust-lang.org, 2024. 
+    \url{https://rustc-dev-guide.rust-lang.org/getting-started.html} (accessed Sep. 28, 2024).
+\end{thebibliography}
 \end{document}
