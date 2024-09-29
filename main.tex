@@ -4,6 +4,7 @@
 \usepackage{listings}
 \usepackage{caption}
 \usepackage{minted}
+\usepackage{todonotes}
 \usepackage[
     protrusion=true,
     activate={true,nocompatibility},
@@ -16,7 +17,7 @@
 \renewcommand{\listingscaption}{Izvorni kod}
 \renewcommand{\listoflistingscaption}{Spisak izvornih kodova}
 
-\title{Reprezentacija izvornog koda - Rust kompajler}
+\title{Intermedijarne reprezentacije izvornog koda u prednjem kraju (frontend-u) rustc kompajlera}
 \author{Aleksa Bajat}
 \date{September 2024}
 
@@ -42,8 +43,8 @@ Medjutim treba imati na umu da je Rust samo \verb|frontend| nad \verb|LLVM|-om. 
 (\verb|frontend|) napisan potpuno ispočetka.
 Veliki deo Rust jezika je izuzetno inovativan i samim tim to je razlog da se detaljno istraži kako u pozadini funkcioniše.
 
-Reprezentacija izvornog koda jeste prikaz ili skup prikaza izvornog koda korisnika jezika da bi se obezbedili tipovi, dijagnostika,
-automatska dealokacija memorije i ostali ergonomski i funkcionalni delovi jezika.
+Reprezentacija izvornog koda jeste prikaz ili skup prikaza izvornog koda korisnika jezika koji obezbedjuju tipove, dijagnostiku,
+automatsku dealokaciju memorije i ostale ergonomske i funkcionalne delovi jezika.
 \newpage
 
 
@@ -57,25 +58,29 @@ Rust kompajler u svakom trenutku poseduje tri glavne verzije skupa alata (\verb|
     \item \verb|Nightly| - sa eksperimentalnim/nestabilnim funkcionalnostima. 
 \end{enumerate}
 
-\verb|Toolchain| se može promeniti na više načina ali najjednostavniji je:
-\begin{verbatim}
+Verzija skupa alata se može promeniti na više načina ali najjednostavniji je prikazan u izvornom kodu \ref{lst:rustup_set}.
+
+\begin{listing}[H]
+\begin{minted}{text}
     rustup toolchain install [version]
     rustup override set [version]
-\end{verbatim}
+\end{minted}
+\caption{Podešavanje verzije skupa alata}
+\label{lst:rustup_set}
+\end{listing}
 
-Prikaz dostupnih lokalnih verzija, kao i trenutna aktivna verzija se može prikazati upotrebom (izlaz prikazan ispod naredbe):
-\begin{verbatim}
+Za prikaz dostupnih lokalnih verzija, kao i trenutna aktivna verzija u direktorijumu koristi se \verb|rustup| \ref{lst:rustup_show}.
+
+\begin{listing}[H]
+\begin{minted}{text}
     rustup show
 
+    # IZLAZ
     installed toolchains
     --------------------
     
     stable-x86_64-unknown-linux-gnu (default)
-    nightly-2024-06-30-x86_64-unknown-linux-gnu
-    nightly-2024-07-02-x86_64-unknown-linux-gnu
     nightly-x86_64-unknown-linux-gnu
-    stage0
-    stage1
     
     active toolchain
     ----------------
@@ -83,38 +88,65 @@ Prikaz dostupnih lokalnih verzija, kao i trenutna aktivna verzija se može prika
     nightly-x86_64-unknown-linux-gnu (directory 
     override for '/home/abajat/Documents/projects/master')
     rustc 1.83.0-nightly (12b26c13f 2024-09-07)
-\end{verbatim}
+\end{minted}
+\caption{Prikaz dostupnih i trenutne verzije skupa alata}
+\label{lst:rustup_show}
+\end{listing}
 
-Rust ima obećanje da će zauvek biti kompatibilan unazad uprkos konstantnom razvoju.
+Rust ima obećanje da će zauvek biti kompatibilan unazad uprkos konstantnom razvoju. 
+\todo{Može da se proširi pričom o edicijama. \url{https://doc.rust-lang.org/edition-guide/editions/}}
 
 \newpage
 
 \section{Upotreba Rust kompajlera}
 
-Rust kompajler \verb|rustc| sa sastoji iz izuzetno velikog broja modula. 
+\verb|Rust| kompajler \verb|rustc| sa sastoji iz izuzetno velikog broja modula. 
 Medjutim upotreba kompajlera je krajnje jednostavna.
-Izvorni kod se prenese u tekstualni dokument i poziva se sledeća naredba:
-\begin{verbatim}
+Izvorni kod se upiše u tekstualni dokument i poziva rustc naredba \ref{lst:rustc}, 
+nakon koje se kreira izvršni fajl pod istim imenom (pod uslovom da je kod ispravan).
+\begin{listing}[H]
+\begin{minted}{text}
     rustc filename.rs
-\end{verbatim}
-nakon čega se kreira izvršni fajl pod istim imenom (pod uslovom da je kod ispravan).
-
+\end{minted}
+\caption{Pokretanje kompajlera}
+\label{lst:rustc}
+\end{listing}
 Napredni korisnici Rust-a upotrebom promenljivih okruženja i zastavica funkcionalnosti 
 (\verb|feature flag|) uvode ili menjaju osnovno ponašanje \verb|rustc| kompajlera.
 Funkcionalnosti korisne za razvoj Rust kompajlera su omogućene samo u \verb|Nightly| verziji koje se
-ispoljavaju preko -Z (nestabilnih) zastavica. Mogu se prikazati upotrebom:
+ispoljavaju preko -Z (nestabilnih) zastavica. Stabilne i nestabilne zastavice se mogu prikazati upotrebom
+komandi iz isečka \ref{lst:rustc_flags}.
 
-\begin{verbatim}
-    rustc -C help # stable
-    rustc -Z help # unstable
-\end{verbatim}
+\begin{listing}[H]
+\begin{minted}{text}
+    rustc -C help # stabilne zastavice 
+    rustc -Z help # nestabilne zastavice 
+\end{minted}
+\caption{Stabilne i nestabilne zastavice}
+\label{lst:rustc_flags}
+\end{listing}
+
+Prilikom razvoja programa napisanog u \verb|Rust|-u retko se koristi direktan poziv \verb|rustc|-u već mu 
+se implicitno pristupa preko menadžera paketa \verb|Cargo| \ref{lst:rustc_flags_2}. 
+
+\begin{listing}[H]
+\begin{minted}{text}
+    cargo build # pokretanje kompajlera
+    cargo rustc -- -C help # stabilne zastavice 
+    cargo rustc -- rustc -Z help # nestabilne zastavice 
+\end{minted}
+\caption{Kompajliranje, stabilne i nestabilne zastavice u "Cargo" paketnom menadžeru}
+\label{lst:rustc_flags_2}
+\end{listing}
 
 U Rustu, \verb|Crate| je najmanja jedinica organizacije koda. Postoje dva osnovna tipa:
+
 \begin{enumerate}
     \item Izvršni programi - sadrže funkciju \verb|main| i mogu da se izvršavaju.
     \item Bilioteke - pružaju funkcionalnosti koje se mogu koristiti u drugim \verb|Crate|-ovima.
 \end{enumerate} 
 
+\todo{Nisam nigde prešao Query sistem, Rust ne kompajlira kroz iteracije već radi query-e. Try-mark-green algoritam je baš bitan za inkrementalnu kompilaciju.}
 Rustc se odlikuje sa dva načina kompilacije: 
 \begin{enumerate}
     \item Kompletna - \verb|Crate| se kompajlira od početka svaki put.
@@ -133,7 +165,10 @@ Reprezentacije izvornog koda Rust-a se dele na:
     \item Reprezentacija srednjeg nivoa
     \item LLVM reprezentacija
 \end{enumerate}
-
+Sa stanovišta \verb|frontend|-a \verb|rustc| kompajlera interesantni su prvih pet nivoa. Šesti nivo generacije 
+koda se naziva \verb|backend| i predstavlja \verb|FFI| (\verb|Foreign| \verb|Function| \verb|Interface|) sloj izmedju \verb|Rust|-a i \verb|C++|-a
+(\verb|LLVM| je napisan u \verb|C++-u|). \todo{Da li opisati tok kompajlera i ulaziti u upoznavanje
+sa svakom od ovih tačaka kroz neki pogled sa visine?}
 
 \subsection{Tok tokena}
 
@@ -149,7 +184,7 @@ Obe implementacije su važne jer \verb|rusc_parse::lexer| koristi \verb|rustc_le
 \verb|rustc_lexer| je lekser niskog nivoa koji poseduje sve osnovne
 funkcionalnosti potrebne prilikom prikupljanja leksema.
 Glavna funkcija iz ovog modula jeste \verb|tokenize| koja na osnovu celokupnog teksta 
-izvornog koda dobavlja skup tokena tj. leksema.
+izvornog koda dobavlja skup tokena tj. leksema \ref{lst:tokenize}.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -163,6 +198,7 @@ pub fn tokenize(input: &str) -> impl Iterator<Item = Token> + '_ {
 }
 \end{minted}
 \caption{Ulazna funkcija leksera}
+\label{lst:tokenize}
 \end{listing}
 
 \newpage
@@ -170,6 +206,7 @@ Implementacija je bazirana na kursoru i unutar te strukture se nalazi celokupna 
 Kursor je realizovan pomoću Rust-ovog iteratora i na osnovu njega prati trenutnu poziciju 
 unutar izvornog koda. Veoma je bitna mogućnost gledanja ispred (\verb|look-ahead|) koja omogućava 
 izvršavanje u jednom prolasku.
+Kloniranje iteratora je jeftina operacija jer se svodi na kopiranje trenutne adresa.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -198,8 +235,6 @@ izvršavanje u jednom prolasku.
 \end{minted}
 \caption{"Look-ahead" mehanizam}
 \end{listing}
-Kloniranje iteratora je jeftina operacija jer se svodi na kopiranje trenutne adresa.
-
 \verb|Token| sadrži samo informaciju o tipu token-a i njegovu dužinu ali ne i 
 sam podatak.
 
@@ -219,7 +254,7 @@ pub struct Token {
 
 Lekser višeg nivoa \verb|rustc_parse::lexer| koristi \verb|rustc_lexer| prilikom izvršavanja sopstvenih
 operacija. Bitna razlika je to što se sadržaj token analizira i postavlja u kontekst.
-Lekser višeg nivoa koristi kursor svog prethodnika za dobavljanje leksema ali unutar strukture \verb|StringReader|. 
+Lekser višeg nivoa koristi kursor svog prethodnika za dobavljanje leksema kroz strukturu \verb|StringReader|. 
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -252,6 +287,8 @@ Interniranje je proces u kome se stringovi pretvaraju internirane simbole. Na ov
 se čuva samo jedna nepromenljiva kopija sadržaja tokena. Tabela simbola je struktura podataka
 koja čuva i održava O(1) pristup bilo kom simbolu.  Tabela simbola je implementirana pomoću \verb|IndexSet|
 strukture. Ne internira se svaki token, već samo tokeni koji imaju varijabilnu dužinu.
+\todo{Interniranje u pozadini koristi SpanData strukturu, u zavisnosti od specifičnih okolnosti
+može koristiti manje ili veće Span-ove. Bitno je, ali nisam siguran da li zalaziti toliko u samu implementaciju.}
 
 Mapiranje tokena iz leksera u tip tokena iz apstraktnog sintaksnog stabla je trivialno.
 Za proste tipove vrši se jedan na jedan konverzija.
@@ -265,8 +302,8 @@ Za proste tipove vrši se jedan na jedan konverzija.
 \caption{Prevodjenje tokena iz leksera u AST tokene}
 \end{listing}
 Za tipove koji imaju sadržaj u vidu nizova karaktera, sadržaj se internira i prenosi 
-u novi token putem simbola. Apstraktno sintaksno stablo se često koristi prilikom kompajliranja i zbog tog razloga 
-mora biti memorijski optimizovano.
+u novi token putem simbola \ref{lst:intern}. Derivati apstraktnog sintaksnog stabla se često koriste prilikom kompajliranja i zbog toga 
+stablo mora biti memorijski optimizovano.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -274,9 +311,8 @@ mora biti memorijski optimizovano.
     token::Lifetime(ident, IdentIsRaw::No)
 \end{minted}
 \caption{Interniranje literala}
+\label{lst:intern}
 \end{listing}
-U primeru se može uočiti da \verb|ast_token|-i po potrebi mogu da imaju i dodatne parametre.
-
 Tok tokena je skup stabala tokena od kojih je svako stablo sačinjeno od skupa tokena.  
 Rezolucija zagrada je proces unutar kog se validira da li je svaka zagrada pravilno zatvorena.
 Rezolucija zagrada se dešava u samom vrhu procesa \verb|rustc_parser::lexer|-a 
@@ -386,7 +422,7 @@ Prilikom poziva parsiranja, jedini fajl koji se odmah procesira jeste glavni \ve
 nastaje putem ekspanzije i rezolucije imena.
 Algoritam \verb|recursive-descent| se koristi tokom procesa parsiranja. Ovo je jedna od najjednostavnijih
 tehnika parsiranja koja se koristi u praksi. Ovakvi parseri se takodje nazivaju \verb|top-down| parseri 
-jer konstruišu stablo od gore ka dole [2]. 
+jer konstruišu stablo od gore ka dole \cite{parsing}. 
 
 Parser koristi prethodno pomenuti tok tokena da bi kreirao kursor nad stablom tokena \verb|TokenTreeCursor|.
 \verb|TokenStream| poseduje implementaciju \verb|into_tree| koji transformiše tip dobijen iz leksera
@@ -428,11 +464,11 @@ pub struct Crate {
 
 \newpage
 
-Najbitnija polja su atributi \verb|attrs| i stavke \verb|items|. Atributi mogu biti spoljašnji ili unutrašnji.
+Najbitnija polja su atributi (\verb|attrs|) i stavke (\verb|items|). Atributi mogu biti spoljašnji ili unutrašnji.
 Koriste se da bi korisnik pružio dodatne instrukcije kompajleru. 
 Dodatne instrukcije mogu biti trivijalne poput dozvoljavanja
 nekorišćenog koda, ali mogu biti i kompleksnije u vidu implementacije osobina 
-\verb|trait|-ova (veoma slična funkcionalnost u poredjenju sa interfejsom u drugim jezicima). 
+(\verb|trait|). Osobina je funkcionalnost veoma slična interfejsu u drugim jezicima. 
 
 
 \begin{listing}[H]
@@ -487,21 +523,21 @@ pub fn parse_crate_mod(&mut self) -> PResult<'a, ast::Crate> {
 \end{listing}
 
 
-Deo formiranja apstraktnog sintaksnog stabla jeste rezolucija imena.
+Rezolucija imena je jedan od delova formiranja apstraktnog sintaksnog stabla.
 U programima se referenciraju funkcije, varijable i tipovi na osnovu imena. Ova imena nisu uvek jedinstvena.
 
 \begin{listing}[H]
 \begin{minted}{rust}
 type a = u32;
 let a: a = 1;
-let b: a = 5;
+let b: a = 5; 
 \end{minted}
 \caption{Rezolucija imena}
 \label{lst:resolution}
 \end{listing}
 
-U izvornom kodu \ref{lst:resolution} kako znamo da li je u liniji 3 "a" tip ili vrednost 1?
-Ovakvi konflikti se rešavaju prilikom rezolucije imena. U ovom slučaju imena tipova i promenljivih se nalaze 
+Kako znamo, u izvornom kodu \ref{lst:resolution}, da li je u liniji 3 "a" tip ili vrednost 1?
+Ovakvi konflikti se rešavaju prilikom rezolucije imena. U datom slučaju imena tipova i promenljivih se nalaze 
 u različitim imenskim prostorima (\verb|namespaces|) i zbog toga mogu da koegzistiraju.
 Rezolucija imena se izvodi iz dva faze. Prva faza se dešava za vreme ekspanzije (više o tome u daljem tekstu) 
 gde se obradjuju samo \verb|import|-i. Druga faza se dešava nakon ekspanzije gde se obradjuje celokupno 
@@ -554,10 +590,13 @@ mod foo {
 \caption{"Netačna sintaksa pre ekspanzije"}
 \label{lst:validate}
 \end{listing}
+\todo{Mogu da napišem makro koji bi proširio telo funkcije, da li da dodam?}
 
 Apstraktno sintaksno stablo pre i posle ekspanzije nekog \verb|Crate|-a se može analizirati pomoću 
 nestabilnih \verb|-Z| zastavica \ref{lst:rustc_ast}.
 
+\todo{Sam prikaz AST-a nije naročito interesantan, a čak i za najjednostavnije programe a + b ume da bude 
+pozamašne dužine}
 
 \begin{listing}[H]
 \begin{minted}{bash}
@@ -576,10 +615,28 @@ u većinskom delu \verb|rustc| kompajlera. HIR je posledica snižavanja (\verb|l
 Tokom procesa snižavanja, neke forme izražavanja bivaju pojednostavljene (\verb|desugared|):
 \begin{enumerate}
     \item Zagrade se uklanjaju jer struktura stabla eksplicitno odredjuje redosled operacija.
-    \item for petlje su konvertovane u while(let) petlje.
+    \item for petlje su konvertovane u while(let) petlje \ref{lst:hir_iter}.
     \item if let se konvertuje u match.
     \item impl u parametrima funkcije se konvertuje u generičke argumente.
 \end{enumerate}
+
+\begin{listing}[H]
+\begin{minted}{rust}
+// Pre
+for elem in vec {
+    process(elem);
+}
+
+// Posle
+let mut iterator = vec.into_iter();
+while let Some(elem) = iterator.next() {
+    process(elem);
+}
+\end{minted}
+\caption{"for" petlja pre i posle pojednostavljenja}
+\label{lst:hir_iter}
+\end{listing}
+
 HIR prikazuje samo trenutno stanje \verb|Crate|-a.
 Samim time sadrži samo funkcije drugih modula koje su implicitno ili eskplicitno korišćene 
 od strane glavnog modula, sve ostalo će biti ignorisano.
@@ -596,6 +653,8 @@ HIR poseduje proširen spektar identifikatora:
 
 Većinu vremena HIR-u se pristupa pomoću HIR mape. HIR mapa sadrži brojne metode 
 koje na osnovu različitih tipova identifikatora dobavljaju podatke.
+\todo{Nisam zadovoljan ovim delom, potrebno je ako ništa objasniti zašto su ovi identifikatori korisni
+u vidu inkrementalne kompilacije}
 
 \newpage
 \subsection{Tipizirana Posredna Reprezentacija Visokog Nivoa - THIR (Typed High-Level Intermediate Representation)}
@@ -637,16 +696,103 @@ pojednostavljivanjem koda:
     \item Pozivi metoda i opterećeni operatori su konvertovani u obične pozive funkcija. 
     \item Obim životnog veka je eksplicitan.
 \end{enumerate}
-
 % Izrazi, iskazi i \verb|match| ruke se čuvaju zasebno. 
 
 Pojednostavljenje čini THIR podobnim za proveru nebezbednog koda jer fundamentalno poseduje manje opcija, 
 nebezbedni pozivi metoda i nebezbedni pozivi funkcija imaju identičnu reprezentaciju. Ova provera 
 iskazuje grešku ako je nebezbedna operacija korišćena van \verb|unsafe| opsega.
 
+\todo{THIR je kratak sam po sebi ali moguće je detaljnije obraditi pattern matching}
 
 \newpage
 \subsection{Posredna Reprezentacija Srednjeg Nivoa - MIR (Mid-Level Intermediate Representation)}
+
+Prvobitno koncept \verb|MIR|-a nije postojao. HIR se transformisao u LLVM reprezentaciju gde 
+vršila optimizacija. Glavni povod za uvod reprezentacije srednjeg nivoa 
+jeste inkrementalna kompilacija i MIR je struktuiran tako da ga je lako sačuvati i učitati, iako su se delovi
+koda promenili tokom vremena.
+
+U HIR-u optimizacija \verb|for| petlje je svedena na \verb|while(let)| u MIR-u se prevodi na \verb|loop match| 
+primitivu \ref{lst:mir_for_1}.  Pozivi metoda su prevedeni u pozive funkcija još u THIR-u.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+let mut iterator = IntoIterator::into_iter(vec);
+loop {
+    match Iterator::next(&mut iterator){
+        Some(elem) => process(elem),
+        None => break,
+    }
+}
+\end{minted}
+\caption{"while let" posle pojednostavljenja}
+\label{lst:mir_for_1}
+\end{listing}
+
+Reprezentacija srednjeg nivoa dozvoljava za još jedan vid optimizacije na nivou frontenda pojednostavljivanjem
+sintakse na primitive koje nisu dostupne u regularnom jeziku.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+let mut iterator = IntoIterator::into_iter(vec);
+
+loop:
+    match Iterator::next(&mut iterator) {
+        Some(elem) => { process(elem); goto loop; }
+        None => { goto break; }
+    }
+
+break:
+\end{minted}
+\caption{"while let" posle pojednostavljenja}
+\label{lst:mir_for_2}
+\end{listing}
+
+Izraz \verb|goto| je u inženjerskoj zajednici gledan sa visine jer kontrola toka nakon odredjene kompleksnosti
+postaje nerazumljiva. Rust iz istog razloga ne dozvoljava upotrebu ove ključne reči, ali u MIR-u svodi 
+petlju na najjednostavniji oblik \ref{lst:mir_for_2}.
+
+\newpage
+U isečku koda \ref{lst:mir_for_2}, jedina kompleksnija sintaktička celina je \verb|match|. U samom jeziku 
+grupisanje provere i pristup podatku je smisleno ali u MIR-u se odvaja na dve celine \ref{lst:mir_for_3}.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+loop:
+    let tmp = Iterator::next(&mut iterator);
+    
+    switch tmp {
+        Some => {
+            let elem = (tmp as Some).0;
+            process(elem);
+            goto loop;
+        }
+        None => {
+            goto break;
+        }
+    }
+    
+break:
+    ....
+\end{minted}
+\caption{"while let" posle pojednostavljenja}
+\label{lst:mir_for_3}
+\end{listing}
+
+Naime ovako sveden kod nikada nije tekstualnom obliku. MIR je graf kontrole toka koji se može predstaviti
+uz pomoć \verb|graphviz|-a \ref{lst:mir_print}. Filter mora biti zadatat prilikom poziva ove komande. 
+Za prikaz celokupnog izlaza koristi se \verb|all| filter, dok ako je neka pojedinačna funkcija od interesovanja
+njeno ime (mnogo češće slučaj).
+
+\begin{listing}[H]
+\begin{minted}{bash}
+cargo rustc -- -Z dump-mir=[filter] -Z dump-mir-graphviz
+\end{minted}
+\caption{Ispis i prikaz MIR-a}
+\label{lst:mir_print}
+\end{listing}
+
+\todo{MIR je opsežan, ne izgleda kao u primerima (umereni nivo obfuskacije). Ovde ima još značajno puno sadržaja koji nije opisan.}
 
 \newpage
 \section{Reference}
@@ -670,5 +816,13 @@ iskazuje grešku ako je nebezbedna operacija korišćena van \verb|unsafe| opseg
     \bibitem{rust-guide} 
     “Getting Started - Rust Compiler Development Guide,” Rust-lang.org, 2024. 
     \url{https://rustc-dev-guide.rust-lang.org/getting-started.html} (accessed Sep. 28, 2024).
+
+    \bibitem{rust-reference}
+    “Introduction - The Rust Reference,” Rust-lang.org, 2015. 
+    \url{https://doc.rust-lang.org/reference/introduction.html} (accessed Sep. 29, 2024).
+    
+    \bibitem{rustonomicon}
+    “Meet Safe and Unsafe - The Rustonomicon,” Rust-lang.org, 2024. 
+    \url{https://doc.rust-lang.org/nomicon/meet-safe-and-unsafe.html} (accessed Sep. 29, 2024).
 \end{thebibliography}
 \end{document}
