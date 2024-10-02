@@ -3,6 +3,7 @@
 *.fls
 *.log
 *.out
-*.pdf
+main.pdf
 *.synctex.gz
 _minted-main
+*.xdv

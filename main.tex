@@ -1,29 +1,35 @@
-\documentclass{article}
+\documentclass[11pt]{article}
 \usepackage{graphicx} % Required for inserting images
 \usepackage{hyperref}
 \usepackage{listings}
 \usepackage{caption}
 \usepackage{minted}
 \usepackage{todonotes}
-\usepackage[
-    protrusion=true,
-    activate={true,nocompatibility},
-    final,
-    tracking=true,
-    kerning=true,
-    spacing=true,
-    factor=1100]{microtype}
-\SetTracking{encoding={*}, shape=sc}{40}
+\usepackage[a4paper, total={6in, 8in},margin=1in,top=0.81in,bottom=1.25in]{geometry}
+\usepackage{fancyhdr}
+\usepackage{pdfpages}
+\usepackage{sectsty}
+\usepackage{fontspec}
+
+\setmainfont{Carlito}
+\sectionfont{\fontsize{24}{30}\selectfont}  % 24pt size, 30pt line spacing
+\subsectionfont{\fontsize{18}{24}\selectfont}
+\subsubsectionfont{\fontsize{14}{18}\selectfont}
 \renewcommand{\listingscaption}{Izvorni kod}
 \renewcommand{\listoflistingscaption}{Spisak izvornih kodova}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[L]{\fontsize{11}{13}\selectfont Aleksa Bajat, Intermedijarne reprezentacije izvornog koda u prednjem kraju (frontend-u) rustc kompajlera}
+\fancyfoot[R]{\newline\fontsize{11}{13}\selectfont \thepage}
 
 \title{Intermedijarne reprezentacije izvornog koda u prednjem kraju (frontend-u) rustc kompajlera}
 \author{Aleksa Bajat}
 \date{September 2024}
 
 \begin{document}
-
-\maketitle
+\includepdf[pages={1-6}]{MscTemplate.pdf}
+\newpage
+\section{Spisak skraćenica}
 \newpage
 \tableofcontents
 \newpage
@@ -793,9 +799,11 @@ cargo rustc -- -Z dump-mir=[filter] -Z dump-mir-graphviz
 \end{listing}
 
 \todo{MIR je opsežan, ne izgleda kao u primerima (umereni nivo obfuskacije). Ovde ima još značajno puno sadržaja koji nije opisan.}
+\newpage
+\section{Zaključak}
 
 \newpage
-\section{Reference}
+\section{Literatura}
 
 \begin{thebibliography}
     \raggedright
@@ -825,4 +833,15 @@ cargo rustc -- -Z dump-mir=[filter] -Z dump-mir-graphviz
     “Meet Safe and Unsafe - The Rustonomicon,” Rust-lang.org, 2024. 
     \url{https://doc.rust-lang.org/nomicon/meet-safe-and-unsafe.html} (accessed Sep. 29, 2024).
 \end{thebibliography}
+
+\newpage
+\section{Podaci o kandidatu}
+
+
+Kandidat Aleksa Bajat rođen je 2001. godine u Novom Sadu. Završio je prirodno-matematički smer na engleskom jeziku 
+u gimnaziji "Jovan Jovanović Zmaj" 2019. godine. Tokom sve četiri godine gimnazije uspešno je pohadjao 
+"Centar za mlade talente" kompanije Schneider Electric.  Godine 2019. upisao je Fakultet 
+Tehničkih Nauka u Novom Sadu, gde je ispunio sve obaveze i položio sve ispite predviđene 
+studijskim programom sa prosečnom ocenom 9.03.
+
 \end{document}
