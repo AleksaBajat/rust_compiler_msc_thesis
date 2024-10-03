@@ -53,7 +53,6 @@ Reprezentacija izvornog koda jeste prikaz ili skup prikaza izvornog koda korisni
 automatsku dealokaciju memorije i ostale ergonomske i funkcionalne delovi jezika.
 \newpage
 
-
 \section{Verzije Rust kompajlera}
 
 Rust kompajler u svakom trenutku poseduje tri glavne verzije skupa alata (\verb|toolchain|):
@@ -80,17 +79,13 @@ Za prikaz dostupnih lokalnih verzija, kao i trenutna aktivna verzija u direktori
 \begin{listing}[H]
 \begin{minted}{text}
     rustup show
-
     # IZLAZ
     installed toolchains
     --------------------
-    
     stable-x86_64-unknown-linux-gnu (default)
     nightly-x86_64-unknown-linux-gnu
-    
     active toolchain
     ----------------
-
     nightly-x86_64-unknown-linux-gnu (directory 
     override for '/home/abajat/Documents/projects/master')
     rustc 1.83.0-nightly (12b26c13f 2024-09-07)
@@ -99,8 +94,31 @@ Za prikaz dostupnih lokalnih verzija, kao i trenutna aktivna verzija u direktori
 \label{lst:rustup_show}
 \end{listing}
 
-Rust ima obećanje da će zauvek biti kompatibilan unazad uprkos konstantnom razvoju. 
-\todo{Može da se proširi pričom o edicijama. \url{https://doc.rust-lang.org/edition-guide/editions/}}
+Rust-ova ključna osobina jeste stabilnost bez stagnacije. Jednom kada se nova 
+karakteristika jezika objavi u stabilnoj verziji, kontributori će održavati 
+tu karakteristiku u svim narednim verzijama \cite{editions}.
+Rane verzije Rust-a nisu posedovale \verb|async| i \verb|await| ključne reči.
+Kada bi Rust odjednom uveo nove ključne reči, neka količina koda bi bila pokvarena.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+    // validan rust kod 
+    // ali nije validan ako je edicija posle 2018 uključena
+    let async = 5; 
+\end{minted}
+\caption{Nekompatibinost prilikom promene edicije}
+\label{lst:edition}
+\end{listing}
+
+
+Rust koristi edicije da bi rešio ovaj problem. Ako postoje promene koje su unazad 
+nekompatibilne onda postaju sastav sledeće edicije. Edicija se mora eksplicitno navesti 
+u konfiguracionom fajlu da bi se karakteristike uključile. Kreiranje novog projekta uz 
+pomoć menadžera paketa \verb|Cargo| automatski bira poslednju dostupnu verziju.
+\verb|Crate|-ovi različitih edicija su kompatibilni jedni sa drugima.
+
+
+
 
 \newpage
 
@@ -152,7 +170,6 @@ U Rustu, \verb|Crate| je najmanja jedinica organizacije koda. Postoje dva osnovn
     \item Bilioteke - pružaju funkcionalnosti koje se mogu koristiti u drugim \verb|Crate|-ovima.
 \end{enumerate} 
 
-\todo{Nisam nigde prešao Query sistem, Rust ne kompajlira kroz iteracije već radi query-e. Try-mark-green algoritam je baš bitan za inkrementalnu kompilaciju.}
 Rustc se odlikuje sa dva načina kompilacije: 
 \begin{enumerate}
     \item Kompletna - \verb|Crate| se kompajlira od početka svaki put.
@@ -166,15 +183,40 @@ Reprezentacije izvornog koda Rust-a se dele na:
 \begin{enumerate}    
     \item Tok tokena
     \item Apstraktno sintaksno stablo
-    \item Posredna reprezentacija visokog nivoa
+    \item Reprezentacija visokog nivoa
     \item Tipizirana reprezentacija visokog nivoa
     \item Reprezentacija srednjeg nivoa
     \item LLVM reprezentacija
 \end{enumerate}
 Sa stanovišta \verb|frontend|-a \verb|rustc| kompajlera interesantni su prvih pet nivoa. Šesti nivo generacije 
 koda se naziva \verb|backend| i predstavlja \verb|FFI| (\verb|Foreign| \verb|Function| \verb|Interface|) sloj izmedju \verb|Rust|-a i \verb|C++|-a
-(\verb|LLVM| je napisan u \verb|C++-u|). \todo{Da li opisati tok kompajlera i ulaziti u upoznavanje
-sa svakom od ovih tačaka kroz neki pogled sa visine?}
+(\verb|LLVM| je napisan u \verb|C++-u|). 
+
+U tipično struktuiranom kompajleru svaka od prethodno navedenih reprezentacija koda predstavlja 
+naizgled poseban program i zasebno izvršavanje. Ovakvi kompajleri se takodje nazivaju 
+kompajleri zasnovani na prolascima. \verb|Rust|-ov kompajler je u tranziciji izmedju 
+kompajlera zanovanog na prolascima i kompajlera zasnovanog na potražnji. Kompajler 
+zasnovan na potražnji umesto da radi na principu arhitekture sa cevima (\verb|pipeline|)
+koristi upite (\verb|query|) nad izvornim kodom i simultono izvršava ceo proces.
+
+Izvršavanje upita je memoizovano. Prvi put kada se upit pozove, izvršiće se komputacije 
+vezane za taj upit. Naredni poziv istog upita rezultat dobavlja iz rečnika.
+Ovakav princip izvršavanja se savršeno uklapa u okvir inkrementalne kompilacije. 
+Rezultat prethodne kompilacije se čuva u masovnoj memoriji (skladištu) koji se može iskoristi
+u trenutnoj kompilaciji.
+
+Trenutno se svaka reprezentacija izvornog koda na \verb|frontend|-u, 
+nakon kreiranja apstraktnog sintaksnog stabla, zasniva na upitima. 
+Lekser i parser još uvek funkcionišu na osnovu prolazaka, 
+ali cilj je da se i oni refaktorišu kako bi koristili upite.
+
+\begin{listing}[H]
+\begin{center}
+\includegraphics[width=2.5in, height=4.5in]{compilation.png}
+\end{center}
+\caption{Proces kompajliranja u prednjem kraju rustc-a}
+\label{lst:compiler}
+\end{listing}
 
 \subsection{Tok tokena}
 
@@ -616,6 +658,8 @@ cargo rustc -- -Z unpretty=ast,expanded
 \newpage
 \subsection{Posredna Reprezentacija Visokog Nivoa - HIR (High-Level Intermediate Representation)}
 
+\todo{try mark green algoritam}
+
 Posredna reprezentacija visokog nivoa je primarna posredna reprezentacija koja se koristi 
 u većinskom delu \verb|rustc| kompajlera. HIR je posledica snižavanja (\verb|lowering|). 
 Tokom procesa snižavanja, neke forme izražavanja bivaju pojednostavljene (\verb|desugared|):
@@ -832,6 +876,10 @@ cargo rustc -- -Z dump-mir=[filter] -Z dump-mir-graphviz
     \bibitem{rustonomicon}
     “Meet Safe and Unsafe - The Rustonomicon,” Rust-lang.org, 2024. 
     \url{https://doc.rust-lang.org/nomicon/meet-safe-and-unsafe.html} (accessed Sep. 29, 2024).
+
+    \bibitem{editions}
+    “What are editions? - The Rust Edition Guide,” Rust-lang.org, 2024.
+    \url{https://doc.rust-lang.org/edition-guide/editions/} (accessed Oct. 03, 2024).
 \end{thebibliography}
 
 \newpage
