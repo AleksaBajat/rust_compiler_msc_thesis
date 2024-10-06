@@ -10,6 +10,7 @@
 \usepackage{pdfpages}
 \usepackage{sectsty}
 \usepackage{fontspec}
+\usepackage{multicol}
 
 \setmainfont{Carlito}
 \sectionfont{\fontsize{24}{30}\selectfont}  % 24pt size, 30pt line spacing
@@ -50,18 +51,157 @@ Medjutim treba imati na umu da je Rust samo \verb|frontend| nad \verb|LLVM|-om. 
 Veliki deo Rust jezika je izuzetno inovativan i samim tim to je razlog da se detaljno istraži kako u pozadini funkcioniše.
 
 Reprezentacija izvornog koda jeste prikaz ili skup prikaza izvornog koda korisnika jezika koji obezbedjuju tipove, dijagnostiku,
-automatsku dealokaciju memorije i ostale ergonomske i funkcionalne delovi jezika.
+automatsku dealokaciju memorije i ostale ergonomske i funkcionalne delove jezika.
 \newpage
 
-\section{Verzije Rust kompajlera}
+\section{Pozadina}
 
-Rust kompajler u svakom trenutku poseduje tri glavne verzije skupa alata (\verb|toolchain|):
+U ovoj sekciji obradjuje se pozadina iza \verb|Rust| jezika, zvaničnog menadžer-a paketa \verb|Cargo| i 
+LLVM seta alata.
 
-\begin{enumerate}
-    \item \verb|Stable| - preporučena za svakodnevnu upotrebu. 
-    \item \verb|Beta| - sa funkcionalnostima koje se usvajaju u sledećoj stabilnoj verziji (\verb|beta| postaje \verb|stable|).
-    \item \verb|Nightly| - sa eksperimentalnim/nestabilnim funkcionalnostima. 
-\end{enumerate}
+\subsection{Rust jezik}
+
+\verb|Rust| jezik je nastao 2006. godine kao lični projekat \verb|Graydon| \verb|Hoare|-a, radnika kompanije 
+Mozila. Uvidevši potencijal jezika, Mozila je započela sponzorisanje projekta 2010. godine kada je jezik i javno 
+predstavljen \cite{rust-language}. \verb|Rust| je jezik niskog nivoa koji se fokusira na memorijsku bezbednost
+i bezbedan paralelizam bez oslanjanja na skupljač smeća (\verb|garbage| \verb|collector|). Skupljač smeća 
+obično uvodi lakoću programiranja na uštrb nedeterminističkih performansi usled oslobadjanja memorije 
+sa \verb|heap|-a, na memorijskim lokacijama gde je brojač referenci na nuli. U jezicima bez skupljača 
+smeća obično postoji odredba koja se poziva da bi se dinamički alocirana memorija oslobodila. \verb|Rust|
+jezik uvodi sasvim novi koncept u domen programskih jezika, pozajmljivač (\verb|borrow| \verb|checker|).
+Pozajmljivač se zasniva na striktnoj primeni menadžmenta resursa u opsegu (\verb|scope-bound| \verb|resource| \verb|management|) 
+od strane kompajlera. Ovo je softverski obrazac koji je preporučljivo koristiti u nebezbednim jezicima 
+niskog nivoa. Naime u prirodi softverskog obrasca jeste da ga nije moguće primorati, osim ako nije direktno
+integrisan u jezik kao što je slučaj sa jezikom \verb|Rust|. Ključan koncept koji se uvodi uz pozajmljivač 
+jeste vlasništvo. Vlasništvo predstavlja dužnost da opseg koji direktno manipuliše memorijom (pristup memoriji nije 
+pridobijen referencom) tu memoriju na kraju opsega oslobodi. 
+
+U jeziku \verb|C| postoje dva načina deljenja 
+memorije: preko vrednosti i preko reference (pokazivača). Deljenje preko vrednosti (kopija) je
+podrazumevano. U \verb|Rust|-u ne postoji deljenje preko vrednosti, već je osnovna akcija prenos vlasništva.
+Deljenje preko vrednosti se može simulirati kloniranjem (funkcija \verb|clone|) koju prati prenos vlasništva.
+Opseg u kome je memorija dodeljena varijabli validna 
+se naziva životni vek. Vlasništvo onemogućuje brojne greške kao što su korišćenje nakon oslobadjanja i curenje 
+memorije tj. aktivno vrši zabranu nedefinisanih stanja. Program se ne kompajlira uspešno ukoliko pravila 
+vlasništva nisu zadovoljena. Izvorni kod \ref{lst:use_after_free_c} predstavlja C kod koji koristi memoriju 
+nakon oslobadjanja. Uspešno se kompajlira ali prilikom izvršavanja vraća grešku. Sa druge strane u izvornom 
+kodu \ref{lst:user_after_free_rust} predstavljen je isti koncept u \verb|Rust| jeziku. Funkcija 
+\verb|drop| preuzmima vlasništvo nad memorijom 
+i oslobadja je, simulirajući kraj opsega. Izvorni kod \ref{lst:user_after_free_rust} se neće 
+uspešno kompajlirati jer se vrši pokušaj manipulacijom memorije nad varijablom kojoj je prošao životni vek.
+Ujedno je demonstrirano da korisnik \verb|Rust| jezika ne mora da brine o životnom veku varijable, isključujući
+curenje memorije kao opcije.
+
+\begin{multicols}{2}
+    \begin{listing}[H]
+    \begin{minted}{C}
+int* pointer = malloc(sizeof(int));
+*pointer = 5;
+pointer = NULL;
+free(pointer);
+*pointer = 6; 
+    \end{minted}
+    \caption{Korišćenje nakon oslobadjanja - C}
+    \label{lst:use_after_free_c}
+    \end{listing}
+    \columnbreak
+    \begin{listing}[H]
+    \begin{minted}{rust}
+let mut a: Box<i32> = Box::new(5);
+drop(a);
+*a = 6;
+    \end{minted}
+    \caption{Korišćenje nakon oslobadjanja - Rust}
+    \label{lst:user_after_free_rust}
+    \end{listing}
+\end{multicols}
+
+U jeziku \verb|C++|, dobra praksa je pravilno označavati nepromenljivost reference ili vrednosti
+unutar funkcija korišćenjem ključne reči \verb|const|, obaveštavajući budućeg korisnika funkcije 
+o promenljivosti. U jeziku \verb|Rust|, promenljivost mora da se naznači ekspicitno upotrebom ključne 
+reči \verb|mut|. Inverzija principa je omogućila daleko bolju čitljivost i razumevanje koda.
+
+\todo{atributi, makroi, paralelizam, Sync + send}
+
+\subsection{Cargo}
+
+Skoro svaki modreni jezik dolazi sa jednim ili više menadžera paketa. Zvanični menadžer paketa u \verb|Rust|
+ekosistemu se naziva \verb|Cargo|. \verb|Cargo| pored distribuiranja paketa pruža razne olakšice i automatizacije 
+u odnosu na sirovo korišćenje \verb|Rust| kompajlera.
+
+\subsection{LLVM}
+
+
+\newpage
+\section{Rust kompajler}
+
+Rust kompajler u svakom trenutku poseduje tri glavne verzije skupa alata (\verb|toolchain|): stabilna, beta i noćna (\verb|nightly|) verzija.
+Stabilna verzija kompajlera je bezbedna i preporučena za produkcionu upotrebu. Beta verzija sadrži funkcionalnosti
+koje se usvajaju u narednoj stabilnoj verziji. Noćna verzija je verzija kompajlera koja se 
+proizvodi svaku noć, sa svim najnovijim netestiranim promenama. Kapija funkcionalnosti je mehanizam bezbednosti
+koji onemogućava da eksperimentalne (nestabilne) funkcionalnosti slučajno završe u produkciji. 
+Kapija je definisana na osnovu stanja kapije, naziva funkcionalnosti, verzije, broja zahteva za povlačenjem
+(\verb|pull| \verb|request|) i opcionog komentara.
+Stanje kapije funkcionalnosti može biti nestabilno, obrisano ili prihvaćeno i nekompletirano. Nekompletirano 
+stanje unutar kapije daje do znanja korisniku noćne verzije ili drugim saradnicima da je nestabilna funkcionalnost 
+u razvoju.  Nestabilne kapije onemogućavaju da stabilna i beta verzija kompajlera kompajliraju 
+dati segment koda (ignoriše se).  Samim time razvoj je direktno 
+usmeren ka noćnoj verziji koja je pod nadzorom celokupnog Rust tima. Obrisane kapije se ne brišu fizički iz koda,
+već se status kapije promeni u obrisan uz komentar sa razlogom. Na ovaj način se čuva istorija pokušanih 
+funkcionalnosti sa razlozima koji su uzrokovali brisanje. U slučaju da se sličan zahtev ponovo javi, retrospektiva
+služi kao moćan alat koji će idealno upozoriti saradnike i preusmeravati ih na bolji pravac.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+    (incomplete, pub_restricted, "CURRENT_RUSTC_VERSION", Some(32409)),
+    (unstable, pub_restricted, "CURRENT_RUSTC_VERSION", Some(32409))
+    (accepted, pub_restricted, "CURRENT_RUSTC_VERSION", Some(32409)),
+    (removed, pub_restricted, "CURRENT_RUSTC_VERSION", 
+    Some(32409), Some("Removed because.."))
+\end{minted}
+\caption{Kapija funkcionalnosti}
+\label{lst:rustup_set}
+\end{listing}
+
+Svaka funkcionalnost prolazi kroz dugačak proces provera pre nego 
+što se usvoji. Ukoliko funkcionalnost zahteva promene koje nisu reorganizacija, refaktorisanje, dokumentovanje
+i slično, kreira se zahtev za komentare (\verb|RFC|) koji detaljno objašnjava važnost funkcionalnosti i 
+pregled implementacionih detalja sa visine. U suprotnom ovaj segment se preskače. Stejkholderi kao što je Rust kompajler tim, ali i sama Rust zajednica 
+ima pravo da vaga o potencijalnim implikacijama koje funkcionalnost donosi. Odobravanje zahteva znači početak 
+razvoja ali ne garantuje usvajanje. Ukoliko je funkcionalnost razvijena, pokrivena testovima, 
+bez značajnih primedbi, bilo koji saradnik može pokrenuti zahtev za stabilizaciju. Zahtev je konstituiran iz 
+četiri dela: dokumentacionog \verb|pull| \verb|request|-a, stabilizacionog izveštaja, 
+perioda finalnog komentara i stabilizacionog \verb|pull| \verb|request|-a.
+
+Dokumentacija funkcionalnosti koja se stabilizuje se briše iz nestabilne knjige \cite{unstable} i ažurira se 
+dokumentacija namenjena korisnicima jezika. Korisnici povlače informacije iz različitih delova dokumentacije,
+naime najbitnije je detljno ažurirati knjigu referenci \cite{rust-reference} koja opisuje svaku stabilnu 
+karakteristiku jezika. Nestablina knjiga vodi relativno ažurnu evidenciju o nestabilnim funkcionalnostima.
+Svaka nestabilna funkcionalnost pripada samo jednoj od tri potkategorije: zastavica kompajlera, funkcionalnost jezika ili
+funkcionalnost standardne biblioteke. Stabilizacioni izveštaj sadrži primere koji prikazuju novu karakteristiku 
+u realnom scenariju, linkove ka dokumentaciji, kao i objašnjenje podržano testovima koji opisuju ponašanje funkcionalnosti u 
+graničnim slučajevima. Saradnik koji prati tok razvoja funkcionalnosti, ukoliko se slaže sa procesom 
+stabilizacije, započinje period finalnog komentara. Ostatak tima pregleda predlog i ukoliko je koncenzus
+pozitivan finalni zahtev za povlačenjem se kreira. Cilj je da se promeni status zastavice u prihvaćeno
+stanje kao i brisanje makroa \verb|gate_feature_post!| koji pokreće grešku ukoliko se funkcionalnost koristi van noćne verzije kompajlera.
+Ukoliko je sve zadovoljeno, funkcionalnost postaje bliža krajnjim korisnicima za testiranje u beta verziji, dok
+neminovno ne predje u stabilnu verziju u narednoj stabilnoj distribuciji. 
+
+\newpage
+
+Originalna ideja iza nestabilnih funkcionalnosti kompajlera, pored očiglednih bezbednosnih pogodnosti, 
+jeste da se pruži pristup najnovijim karakteristikama zarad testiranja i evaluacije korisnosti.
+Uprkos tome 2022. godine 12\%  paketa u Rust ekosistemu se direktno oslanjalo na nestabilne funkcionalnosti, a 
+44\% paketa je indirektno zavisilo od nestabilnih funkcionalnosti da bi se kompajliralo \cite{unstable-flags}. Iako 
+statusi kapija semantički omogućavaju brisanje kapije bez grubog brisanja, kompajler konstantno menja arhitekturu, čime ujedno 
+rešava probleme zbog kojih je postojanje nestabilnih funkcionalnosti bilo potrebno. Naime brisanje kapije 
+u bilo kom obliku označava da u sledećoj noćnoj verziji, program ili biblioteka zavisna od nestabilne funkcionalnosti
+neće moći da se kompajlira. To takodje ne garantuje da se nestabilna funkcionalnosti neće vratiti već u sledećoj
+verziji i obrnuto. Iako se od strane zajednice pruža trud da se nestabilne funkcionalnosti prate, ovakav vid 
+razvoja bi se pokazao neefikasan jer svaki budući razvoj potencijalno zahteva obazrivost na nestabilne 
+biblioteke što nije cilj kompajlera. Procentualna zavisnost prema nestabilnim funkcionalnostima je visoka ali 
+analiza nije sprovedena da se izračuna procenat masovno korišćenih paketa sa direktnim ili tranzitivnim
+zavisnostima, kao i procenat nestabilnih funkcionalnosti na kojima se ovakvi paketi zasnivaju.
 
 Verzija skupa alata se može promeniti na više načina ali najjednostavniji je prikazan u izvornom kodu \ref{lst:rustup_set}.
 
@@ -98,7 +238,7 @@ Rust-ova ključna osobina jeste stabilnost bez stagnacije. Jednom kada se nova
 karakteristika jezika objavi u stabilnoj verziji, kontributori će održavati 
 tu karakteristiku u svim narednim verzijama \cite{editions}.
 Rane verzije Rust-a nisu posedovale \verb|async| i \verb|await| ključne reči.
-Kada bi Rust odjednom uveo nove ključne reči, neka količina koda bi bila pokvarena.
+Kada bi Rust bez mera predostrožnosti uveo nove ključne reči, neka količina koda bi bila pokvarena.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -113,7 +253,7 @@ Kada bi Rust odjednom uveo nove ključne reči, neka količina koda bi bila pokv
 
 Rust koristi edicije da bi rešio ovaj problem. Ako postoje promene koje su unazad 
 nekompatibilne onda postaju sastav sledeće edicije. Edicija se mora eksplicitno navesti 
-u konfiguracionom fajlu da bi se karakteristike uključile. Kreiranje novog projekta uz 
+u konfiguracionom fajlu da bi se funkcionalnosti uključile. Kreiranje novog projekta uz 
 pomoć menadžera paketa \verb|Cargo| automatski bira poslednju dostupnu verziju.
 \verb|Crate|-ovi različitih edicija su kompatibilni jedni sa drugima.
 
@@ -867,19 +1007,29 @@ cargo rustc -- -Z dump-mir=[filter] -Z dump-mir-graphviz
 
     \bibitem{rust-guide} 
     “Getting Started - Rust Compiler Development Guide,” Rust-lang.org, 2024. 
-    \url{https://rustc-dev-guide.rust-lang.org/getting-started.html} (accessed Sep. 28, 2024).
+    \url{https://rustc-dev-guide.rust-lang.org/getting-started.html} (pristupljeno Sep. 28, 2024).
 
     \bibitem{rust-reference}
     “Introduction - The Rust Reference,” Rust-lang.org, 2015. 
-    \url{https://doc.rust-lang.org/reference/introduction.html} (accessed Sep. 29, 2024).
+    \url{https://doc.rust-lang.org/reference/introduction.html} (pristupljeno Sep. 29, 2024).
     
     \bibitem{rustonomicon}
     “Meet Safe and Unsafe - The Rustonomicon,” Rust-lang.org, 2024. 
-    \url{https://doc.rust-lang.org/nomicon/meet-safe-and-unsafe.html} (accessed Sep. 29, 2024).
+    \url{https://doc.rust-lang.org/nomicon/meet-safe-and-unsafe.html} (pristupljeno Sep. 29, 2024).
 
     \bibitem{editions}
     “What are editions? - The Rust Edition Guide,” Rust-lang.org, 2024.
-    \url{https://doc.rust-lang.org/edition-guide/editions/} (accessed Oct. 03, 2024).
+    \url{https://doc.rust-lang.org/edition-guide/editions/} (pristupljeno Okt. 03, 2024).
+
+    \bibitem{unstable}
+    “The Unstable Book - The Rust Unstable Book,” Rust-lang.org, 2024. 
+    \url{https://doc.rust-lang.org/unstable-book/index.html} (pristupljeno Okt. 06, 2024).
+
+    \bibitem{unstable-flags}
+    Li, Chenghao, et al. “Demystifying Compiler Unstable Feature Usage and Impacts in the Rust Ecosystem.” 26 Oct. 2023. arXiv, Accessed 6 Oct. 2024. 
+
+    \bibitem{rust-language}
+    Bugden W, Alahmar A. Rust: The programming language for safety and performance. arXiv preprint arXiv:2206.05503. 2022 Jun 11.
 \end{thebibliography}
 
 \newpage
