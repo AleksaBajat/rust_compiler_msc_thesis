@@ -61,7 +61,7 @@ LLVM seta alata.
 
 \subsection{Rust jezik}
 
-\verb|Rust| jezik je nastao 2006. godine kao lični projekat \verb|Graydon| \verb|Hoare|-a, radnika kompanije 
+\verb|Rust| je statički tipiziran jezik koji je nastao 2006. godine kao lični projekat \verb|Graydon| \verb|Hoare|-a, radnika kompanije 
 Mozila. Uvidevši potencijal jezika, Mozila je započela sponzorisanje projekta 2010. godine kada je jezik i javno 
 predstavljen \cite{rust-language}. \verb|Rust| je jezik niskog nivoa koji se fokusira na memorijsku bezbednost
 i bezbedan paralelizam bez oslanjanja na skupljač smeća (\verb|garbage| \verb|collector|). Skupljač smeća 
@@ -121,7 +121,44 @@ unutar funkcija korišćenjem ključne reči \verb|const|, obaveštavajući budu
 o promenljivosti. U jeziku \verb|Rust|, promenljivost mora da se naznači ekspicitno upotrebom ključne 
 reči \verb|mut|. Inverzija principa je omogućila daleko bolju čitljivost i razumevanje koda.
 
-\todo{atributi, makroi, paralelizam, Sync + send}
+Bezbedni paralelizam je jedna od glavnih odlika \verb|Rust| jezika. Realizuje se pomoću osobina (\verb|trait|)
+i vlasništva. Osobine su ugovor koji se postavlja nad strukturom i po funkcionalnosti liče na interfejse
+u drugim jezicima. Glavna razlika je u fleksibilnosti. Osobine mogu da se implementiraju nad tipovima
+koje nismo mi definisali, na primer iz drugih biblioteka. Razlog tome jeste baš u ključnoj reči ugovor.
+Ako struktura zadovoljava ugovor koji osobina nalaže (obično ispunjenje drugih osobina ili
+metoda) onda je osobina primenljiva nad strukturom. Ključne osobine koje realizuju bezbednost podataka
+u paralelnom okruženju jesu \verb|Sync| i \verb|Send|. Tip je \verb|Send| ako je bezbedno poslati ga 
+u drugu nit. Tip je \verb|Sync| ako ga je bezbedno deliti izmedju niti. Tipovi sačinjeni od drugih tipova koji
+implementiraju \verb|Sync| i/ili \verb|Send| su automatski \verb|Sync| i/ili \verb|Sync|. Skoro sve primitive
+unutar \verb|Rust| jezika su \verb|Send| i \verb|Sync|. U bitnije izuzetke spadaju sirovi pokazivači jer nemaju
+bezbednosne garancije, \verb|UnsafeCell| (samim tima i \verb|Cell| i \verb|RefCell|) jer implementiraju
+unutrašnju mutabilnost čime je tip rizik u vidu štetnog preplitanja, kao i \verb|Rc| (brojač referenci) 
+jer je broj referenci deljen i nesinhronizovan. Uz \verb|std::marker|, ove osobine su jedine primitive koje su 
+deo samog kompajlera, a ne standardne biblioteke.
+
+Atributi su zaglavlja koja pružaju dodatne informacije kompajleru. Atributi mogu biti spoljašnji ili 
+unutrašnji \ref{lst:attributes}. Primenjuju se na brojne konstrukte unutar jezika kao što su eksterni blokovi,
+funkcije, moduli i enumeracije. Atributi generišu kod, isključuju ili uključuju dijagnostiku, 
+postavljaju limitacije i udeluju u testiranju. 
+
+\begin{listing}[H]
+\begin{minted}{rust}
+// Spoljašnji atribut se primenjuje na tip koji sledi 
+// nakon atributa koji pri tome nije atribut.
+#[allow(dead_code)] 
+fn main() {
+    // Unutrašnji atribut.
+    // Primenjuje se na vlasnika lokalnog opsega. 
+    #![allow(unused_variables)]
+    let x = 10;  
+}
+\end{minted}
+\caption{Spoljašnji i unutrašnji atributi}
+\label{lst:attributes}
+\end{listing}
+
+Makro sistem je jedan od najmoćnijih delova \verb|Rust| jezika. Makroi generišu kod na mestima gde su pozvani.
+Primarno se koriste da bi se izbeglo ponvaljanje identičnog koda (\verb|boilerplate|).
 
 \subsection{Cargo}
 
@@ -659,20 +696,6 @@ nekorišćenog koda, ali mogu biti i kompleksnije u vidu implementacije osobina
 (\verb|trait|). Osobina je funkcionalnost veoma slična interfejsu u drugim jezicima. 
 
 
-\begin{listing}[H]
-\begin{minted}{rust}
-// Spoljašnji atribut se primenjuje na tip koji sledi 
-// nakon atributa koji pri tome nije atribut.
-#[allow(dead_code)] 
-fn main() {
-    // Unutrašnji atribut.
-    // Primenjuje se na vlasnika lokalnog opsega. 
-    #![allow(unused_variables)]
-    let x = 10;  
-}
-\end{minted}
-\caption{Spoljašnji i unutrašnji atributi}
-\end{listing}
 
 
 Stavke su grupacije tokena iz leksera koje tako grupisane imaju semantiku. Iz perspektive koda 
@@ -983,6 +1006,7 @@ cargo rustc -- -Z dump-mir=[filter] -Z dump-mir-graphviz
 \end{listing}
 
 \todo{MIR je opsežan, ne izgleda kao u primerima (umereni nivo obfuskacije). Ovde ima još značajno puno sadržaja koji nije opisan.}
+
 \newpage
 \section{Zaključak}
 
@@ -1031,6 +1055,9 @@ cargo rustc -- -Z dump-mir=[filter] -Z dump-mir-graphviz
     \bibitem{rust-language}
     Bugden W, Alahmar A. Rust: The programming language for safety and performance. arXiv preprint arXiv:2206.05503. 2022 Jun 11.
 \end{thebibliography}
+
+\newpage
+\section{Dodatak 1}
 
 \newpage
 \section{Podaci o kandidatu}

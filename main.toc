@@ -16,4 +16,5 @@
 \contentsline {subsection}{\numberline {6.5}Posredna Reprezentacija Srednjeg Nivoa - MIR (Mid-Level Intermediate Representation)}{28}{subsection.6.5}%
 \contentsline {section}{\numberline {7}Zaključak}{30}{section.7}%
 \contentsline {section}{\numberline {8}Literatura}{31}{section.8}%
-\contentsline {section}{\numberline {9}Podaci o kandidatu}{32}{section.9}%
+\contentsline {section}{\numberline {9}Dodatak 1}{32}{section.9}%
+\contentsline {section}{\numberline {10}Podaci o kandidatu}{33}{section.10}%
