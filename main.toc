@@ -3,18 +3,18 @@
 \contentsline {section}{\numberline {3}Pozadina}{10}{section.3}%
 \contentsline {subsection}{\numberline {3.1}Rust jezik}{10}{subsection.3.1}%
 \contentsline {subsection}{\numberline {3.2}Cargo}{11}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}LLVM}{11}{subsection.3.3}%
-\contentsline {section}{\numberline {4}Rust kompajler}{12}{section.4}%
-\contentsline {section}{\numberline {5}Upotreba Rust kompajlera}{15}{section.5}%
-\contentsline {section}{\numberline {6}Reprezentacije izvornog koda}{15}{section.6}%
+\contentsline {subsection}{\numberline {3.3}LLVM}{12}{subsection.3.3}%
+\contentsline {section}{\numberline {4}Rust kompajler}{13}{section.4}%
+\contentsline {section}{\numberline {5}Upotreba Rust kompajlera}{16}{section.5}%
+\contentsline {section}{\numberline {6}Reprezentacije izvornog koda}{16}{section.6}%
 \contentsline {subsection}{\numberline {6.1}Tok tokena}{17}{subsection.6.1}%
-\contentsline {subsubsection}{\numberline {6.1.1}rustc\_lexer}{17}{subsubsection.6.1.1}%
-\contentsline {subsubsection}{\numberline {6.1.2}rustc\_parse::lexer}{19}{subsubsection.6.1.2}%
-\contentsline {subsection}{\numberline {6.2}Apstraktno Sintaksno Stablo}{22}{subsection.6.2}%
-\contentsline {subsection}{\numberline {6.3}Posredna Reprezentacija Visokog Nivoa - HIR (High-Level Intermediate Representation)}{26}{subsection.6.3}%
-\contentsline {subsection}{\numberline {6.4}Tipizirana Posredna Reprezentacija Visokog Nivoa - THIR (Typed High-Level Intermediate Representation)}{27}{subsection.6.4}%
-\contentsline {subsection}{\numberline {6.5}Posredna Reprezentacija Srednjeg Nivoa - MIR (Mid-Level Intermediate Representation)}{28}{subsection.6.5}%
-\contentsline {section}{\numberline {7}Zaključak}{30}{section.7}%
-\contentsline {section}{\numberline {8}Literatura}{31}{section.8}%
-\contentsline {section}{\numberline {9}Dodatak 1}{32}{section.9}%
-\contentsline {section}{\numberline {10}Podaci o kandidatu}{33}{section.10}%
+\contentsline {subsubsection}{\numberline {6.1.1}rustc\_lexer}{18}{subsubsection.6.1.1}%
+\contentsline {subsubsection}{\numberline {6.1.2}rustc\_parse::lexer}{20}{subsubsection.6.1.2}%
+\contentsline {subsection}{\numberline {6.2}Apstraktno Sintaksno Stablo}{23}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Posredna Reprezentacija Visokog Nivoa - HIR (High-Level Intermediate Representation)}{27}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Tipizirana Posredna Reprezentacija Visokog Nivoa - THIR (Typed High-Level Intermediate Representation)}{28}{subsection.6.4}%
+\contentsline {subsection}{\numberline {6.5}Posredna Reprezentacija Srednjeg Nivoa - MIR (Mid-Level Intermediate Representation)}{29}{subsection.6.5}%
+\contentsline {section}{\numberline {7}Zaključak}{31}{section.7}%
+\contentsline {section}{\numberline {8}Literatura}{32}{section.8}%
+\contentsline {section}{\numberline {9}Dodatak 1}{33}{section.9}%
+\contentsline {section}{\numberline {10}Podaci o kandidatu}{34}{section.10}%

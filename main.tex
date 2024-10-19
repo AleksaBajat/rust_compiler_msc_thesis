@@ -157,14 +157,38 @@ fn main() {
 \label{lst:attributes}
 \end{listing}
 
-Makro sistem je jedan od najmoćnijih delova \verb|Rust| jezika. Makroi generišu kod na mestima gde su pozvani.
-Primarno se koriste da bi se izbeglo ponvaljanje identičnog koda (\verb|boilerplate|).
+Makro sistem je jedan od najmoćnijih delova \verb|Rust| jezika. Makroi su kod koji generiše drugi kod i ovaj 
+način programiranja se naziva metaprogramiranje. 
+Korisni su da bi se smanjila količina koda koja mora da se održava, ali i da bi se izbeglo višestruko pisanje 
+veoma sličnog koda (\verb|boilerplate|). Postoji četiri vrste makroa: deklarativni, funkcijski, proceduralni i atributski. 
+Deklarativni i funkcijski su slični po prirodi, pozivaju se nalik običnim funkcijama ali u imenovanju imaju sufiks "!".
+Deklarativni makroi moraju deterministički navesti broj parametara, dok funkcijski imaju proizvoljan broj parametara.
+Jedan od najčešće korišćenih deklarativnih makroa jeste \verb|vec!| koji služi da smanji broj linija koda da bi se 
+inicijalizovao vektor. Sa druge strane funkcijski makroi mogu da se koriste da bi se pisala sintaksa nekog drugog jezika, 
+što je i česta pojava u \verb|Rust| bibliotekama koje pozivaju \verb|SQL| ili \verb|Python|.
+Proceduralni makroi su makroi koji uvoze kroz predefinisani \verb|derive| atribut, dok atributski makroi generišu sasvim 
+novi atribut. Glavna razlika izmedju njih jeste u fleksibilnosti. Proceduralni makroi rade na strukturama i enumeracijama,
+dok atributski makroi mogu biti definisani da rade i nad drugim stavkama jezika poput funkcija.
+
 
 \subsection{Cargo}
 
 Skoro svaki modreni jezik dolazi sa jednim ili više menadžera paketa. Zvanični menadžer paketa u \verb|Rust|
-ekosistemu se naziva \verb|Cargo|. \verb|Cargo| pored distribuiranja paketa pruža razne olakšice i automatizacije 
-u odnosu na sirovo korišćenje \verb|Rust| kompajlera.
+ekosistemu se naziva \verb|Cargo|. Glavni zadatak mu je da beleži zavisnosti programa tako da je moguće rekreirati 
+program na deterministički način. Menadžer paketa uvodi \verb|Cargo.lock| i \verb|Cargo.toml|
+fajlove. \verb|Cargo.toml| održava spisak paketa koji se trenutno koriste u programu. \verb|Cargo.lock| omogućava da se 
+pri rekonstrukciji programa identični paketi koriste praćenjem heš vrednosti paketa i njihovih semantičkih verzija.
+\verb|Cargo| pored distribuiranja paketa pruža razne olakšice i automatizacije u odnosu na sirovo korišćenje \verb|Rust| kompajlera. 
+
+U Rustu, \verb|Crate| je najmanja jedinica organizacije koda. Postoje dva osnovna tipa, izvršni programi i biblioteke.
+Izvršni programi sadrže \verb|main| funkciju i mogu da se izvršavaju. Biblioteke se ne izvršavaju i nemaju potrebu za \verb|main|
+funkcijom već pružaju funkcionalnosti koje se mogu koristiti u drugim \verb|Crate|-ovima.
+
+\verb|Cargo| se koristi da bi se jednostavno inicijalizovao novi \verb|Crate|. 
+dodavanje/brisanje paketa 
+konstruisanje i izvrsavanje
+
+
 
 \subsection{LLVM}
 
@@ -292,8 +316,14 @@ Rust koristi edicije da bi rešio ovaj problem. Ako postoje promene koje su unaz
 nekompatibilne onda postaju sastav sledeće edicije. Edicija se mora eksplicitno navesti 
 u konfiguracionom fajlu da bi se funkcionalnosti uključile. Kreiranje novog projekta uz 
 pomoć menadžera paketa \verb|Cargo| automatski bira poslednju dostupnu verziju.
+
+
 \verb|Crate|-ovi različitih edicija su kompatibilni jedni sa drugima.
 
+\begin{enumerate}
+    \item Izvršni programi - sadrže funkciju \verb|main| i mogu da se izvršavaju.
+    \item Bilioteke - pružaju funkcionalnosti koje se mogu koristiti u drugim \verb|Crate|-ovima.
+\end{enumerate} 
 
 
 
@@ -340,18 +370,13 @@ se implicitno pristupa preko menadžera paketa \verb|Cargo| \ref{lst:rustc_flags
 \label{lst:rustc_flags_2}
 \end{listing}
 
-U Rustu, \verb|Crate| je najmanja jedinica organizacije koda. Postoje dva osnovna tipa:
-
-\begin{enumerate}
-    \item Izvršni programi - sadrže funkciju \verb|main| i mogu da se izvršavaju.
-    \item Bilioteke - pružaju funkcionalnosti koje se mogu koristiti u drugim \verb|Crate|-ovima.
-\end{enumerate} 
 
 Rustc se odlikuje sa dva načina kompilacije: 
 \begin{enumerate}
     \item Kompletna - \verb|Crate| se kompajlira od početka svaki put.
     \item Inkrementalna - prilikom kompajliranja beleži se istorija koja se koristi u svakom narednom procesu kompajliranja (dobitak u brzini na uštrb memorije).
 \end{enumerate}
+
 
 \section{Reprezentacije izvornog koda}
 
