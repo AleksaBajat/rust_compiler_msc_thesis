@@ -216,7 +216,14 @@ koja prima dodatne kompajlerske opcije.
 
 \subsection{LLVM}
 
-
+Generisanje koda je ... \todo{dragon book}
+\verb|Rust| jezik je \verb|frontend| nad \verb|LLVM|-om.
+LLVM je kolekcija modularnih i ponovo iskoristivih kompajlerskih tehnologija. LLVM je započeo 
+sa ciljem da pruži modernu kompilaciju zasnovanu na jedinstvenoj statičkoj dodeli (\verb|Static| \verb|Single| \verb|Assignment|).
+Jedinstvena statička dodela se bazira na tome da je vrednost svake promenljive dodeljena tačno jedan put. Višestruke dodele 
+nad istom promenljivom kreiraju nove verzije te varijable. LLVM modifikuje posrednu reprezentaciju tako da svaki put 
+kada se nova promenljiva dodeli u kodu zameni dodelu za kreiranje nove verzije.
+Različite verzije promenljivih se razlikuju tako što se na ime promenljive pridodaje redni broj verzije.
 \newpage
 \section{Rust kompajler}
 
