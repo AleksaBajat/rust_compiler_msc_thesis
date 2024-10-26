@@ -295,44 +295,94 @@ biblioteke što nije cilj kompajlera. Procentualna zavisnost prema nestabilnim f
 analiza nije sprovedena da se izračuna procenat masovno korišćenih paketa sa direktnim ili tranzitivnim
 zavisnostima, kao i procenat nestabilnih funkcionalnosti na kojima se ovakvi paketi zasnivaju.
 
-Verzija skupa alata se može promeniti na više načina ali najjednostavniji je prikazan u izvornom kodu \ref{lst:rustup_set}.
+Skup alata (\verb|toolchain|) je kompletna instalacija Rust kompajlera (\verb|rustc|) i srodnih alata kao što 
+je \verb|Cargo|. Skup alata se instalira i ažurira uz pomoć programa komandne linije \verb|rustup| \ref{lst:rustup_set}. 
 
 \begin{listing}[H]
 \begin{minted}{text}
     rustup toolchain install [version]
-    rustup override set [version]
 \end{minted}
-\caption{Podešavanje verzije skupa alata}
+\caption{Instaliranje novog skupa alata}
 \label{lst:rustup_set}
 \end{listing}
 
-Za prikaz dostupnih lokalnih verzija, kao i trenutna aktivna verzija u direktorijumu koristi se \verb|rustup| \ref{lst:rustup_show}.
+Program \verb|rustup| automatski odredjuje koji skup alata će se koristiti prilikom pokretanja kompajlera. 
+Postoji više načina da se kontroliše koji skup alata se primenjuje za neko proizvoljno okruženje.
+Ako prvi argument \verb|rustc| kompajlera ili \verb|Cargo| menadžera paketa počinje sa "+" (bez navodnika) 
+onda naznačava ime skupa alata koji je poželjan da se koristi \ref{lst:toolchain_cli}. 
+
+\begin{listing}[H]
+\begin{minted}{text}
+    cargo +beta run 
+    rustc +beta main.rs
+\end{minted}
+\caption{Konfigurisanje skupa alata kroz argumente komandne linije}
+\label{lst:toolchain_cli}
+\end{listing}
+
+Ukoliko ne postoji prikazuje se poruka da skup 
+alata nije instaliran ili da ga je nemoguće dobaviti. Promenljiva okruženja \verb|RUSTUP_TOOLCHAIN| specificira 
+podrazumevani skup alata. Skup alata je moguće primeniti na nivou direktorijuma upotrebom \verb|rustup| \verb|override|
+komande \ref{lst:toolchain_dir}. 
+
+\begin{listing}[H]
+\begin{minted}{text}
+    rustup override set beta 
+\end{minted}
+\caption{Konfigurisanje skupa alata na nivou direktorijuma}
+\label{lst:toolchain_dir}
+\end{listing}
+
+Alternativno kreiranjem konfiguracionog fajla \verb|rust-toolchain.toml| u korenskom 
+direktorijumu projekta moguće je specificirati skup alata za taj projekat \ref{lst:toolchain_cfg}.
+
+\begin{listing}[H]
+\begin{minted}{toml}
+[toolchain]
+channel = "nightly-2020-07-10"
+components = [ "rustfmt", "rustc-dev" ]
+targets = [ "wasm32-unknown-unknown", "thumbv2-none-eabi" ]
+profile = "minimal"
+\end{minted}
+\caption{Konfigurisanje skupa alata uz pomoć konfiguracionog fajla}
+\label{lst:toolchain_cfg}
+\end{listing}
+
+Ovaj način je najoptimalniji u produkcionim projektima ukoliko se koristi skup alata koji 
+nije podrazumevan budući da je konfiguracioni fajl daleko opsežniji i obuhvata mete kompajliranja i 
+potrebne komponente. Mete kompajliranja su distribucije za koje se kompaljira \verb|Rust| program.
+Svaki skup alata sadrži komponente od kojih su neke opcione a neke neophodne. Jedna od najkorišćenijih 
+opcionih komponenti jeste \verb|clippy| koji služi da predupredi što više čestih grešaka uz pomoć 
+700 novih upozorenja. 
+
+
+Za prikaz dostupnih lokalnih verzija, kao i trenutna aktivna verzija u direktorijumu koristi se \verb|rustup|
+\verb|show| komanda \ref{lst:rustup_show}.
 
 \begin{listing}[H]
 \begin{minted}{text}
     rustup show
-    # IZLAZ
-    installed toolchains
-    --------------------
-    stable-x86_64-unknown-linux-gnu (default)
-    nightly-x86_64-unknown-linux-gnu
-    active toolchain
-    ----------------
-    nightly-x86_64-unknown-linux-gnu (directory 
-    override for '/home/abajat/Documents/projects/master')
-    rustc 1.83.0-nightly (12b26c13f 2024-09-07)
+        installed toolchains
+        --------------------
+        stable-x86_64-unknown-linux-gnu (default)
+        nightly-x86_64-unknown-linux-gnu
+        active toolchain
+        ----------------
+        nightly-x86_64-unknown-linux-gnu (directory 
+        override for '/home/abajat/Documents/projects/master')
+        rustc 1.83.0-nightly (12b26c13f 2024-09-07)
 \end{minted}
-\caption{Prikaz dostupnih i trenutne verzije skupa alata}
+\caption{Prikaz izlaza "rustup show" komande}
 \label{lst:rustup_show}
 \end{listing}
 
-Rust-ova ključna osobina jeste stabilnost bez stagnacije. Jednom kada se nova 
-karakteristika jezika objavi u stabilnoj verziji, kontributori će održavati 
-tu karakteristiku u svim narednim verzijama \cite{editions}.
+Ključna osobina \verb|Rust| jezika jeste stabilnost bez stagnacije. Jednom kada se nova 
+funkcionalnost jezika objavi u stabilnoj verziji, kontributori će održavati 
+tu funkcionalnost u svim narednim verzijama \cite{editions}.
 Rane verzije Rust-a nisu posedovale \verb|async| i \verb|await| ključne reči.
 Kada bi Rust bez mera predostrožnosti uveo nove ključne reči, neka količina koda bi bila pokvarena.
 
-\begin{listing}[H]
+\begin{listing}[h]
 \begin{minted}{rust}
     // validan rust kod 
     // ali nije validan ako je edicija posle 2018 uključena
@@ -345,16 +395,27 @@ Kada bi Rust bez mera predostrožnosti uveo nove ključne reči, neka količina 
 
 Rust koristi edicije da bi rešio ovaj problem. Ako postoje promene koje su unazad 
 nekompatibilne onda postaju sastav sledeće edicije. Edicija se mora eksplicitno navesti 
-u konfiguracionom fajlu da bi se funkcionalnosti uključile. Kreiranje novog projekta uz 
+u \verb|Cargo.toml| konfiguracionom fajlu da bi se funkcionalnosti uključile \ref{lst:edition_toml}. Kreiranje novog projekta uz 
 pomoć menadžera paketa \verb|Cargo| automatski bira poslednju dostupnu verziju.
+\verb|Crate|-ovi različitih edicija su kompatibilne izmedju sebe. Kompatibilnost omogućuje 
+karakteristika Rust kompajlera da prilikom kompajliranja prevodi svaki \verb|Crate| na istu medju reprezentaciju 
+koda bez obzira na ediciju. Omogućavanje ovakvog nivoa kompatibilnosti limitira nivo promene 
+koji se može očekivati u ediciji. Migracija na novu verziju \verb|Rust|-a je obično laka i pretežno automatizovana
+i sprovodi se kroz \verb|Cargo|. Automatske migracije nisu savršene i moguće je da je potreban nivo manuelnog 
+truda da bi se u potpunosti završio proces.
 
+\begin{listing}[h]
+\begin{minted}{toml}
+[package]
+name = "some_crate"
+version = "0.1.0"
+edition = "2021"
 
-\verb|Crate|-ovi različitih edicija su kompatibilni jedni sa drugima.
+\end{minted}
+\caption{Eksplicitno navodjenje edicije u Cargo.toml fajlu}
+\label{lst:edition_toml}
+\end{listing}
 
-\begin{enumerate}
-    \item Izvršni programi - sadrže funkciju \verb|main| i mogu da se izvršavaju.
-    \item Bilioteke - pružaju funkcionalnosti koje se mogu koristiti u drugim \verb|Crate|-ovima.
-\end{enumerate} 
 
 
 
