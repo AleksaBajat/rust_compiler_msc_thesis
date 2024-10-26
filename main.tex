@@ -56,7 +56,7 @@ automatsku dealokaciju memorije i ostale ergonomske i funkcionalne delove jezika
 
 \section{Pozadina}
 
-U ovoj sekciji obradjuje se pozadina iza \verb|Rust| jezika, zvaničnog menadžer-a paketa \verb|Cargo| i 
+U ovoj sekciji obradjuje se pozadina iza \verb|Rust| jezika, zvaničnog menadžera paketa \verb|Cargo| i 
 LLVM seta alata.
 
 \subsection{Rust jezik}
@@ -170,6 +170,14 @@ Proceduralni makroi su makroi koji uvoze kroz predefinisani \verb|derive| atribu
 novi atribut. Glavna razlika izmedju njih jeste u fleksibilnosti. Proceduralni makroi rade na strukturama i enumeracijama,
 dok atributski makroi mogu biti definisani da rade i nad drugim stavkama jezika poput funkcija.
 
+\verb|Rust| jezik se odlikuje apstrakcijama bez cene. Osobina apstrakcija bez cene označava da koncepti 
+višeg nivoa kao što su kolekcije i generički tipovi ne utiču na performanse programa prilikom njegovog izvršavanja.
+\verb|Rust| omogućava ovu karakteristiku putem monomorfizacije. Monomorfizacija je proces putem kojeg se kreira 
+kopija generičkog koda za svaki konkretan tip koji koristi generički kod tj. generički kod se pretvara u 
+negenerički kod. Naime ovaj proces povećava veličinu krajnjeg izvršnog fajla i produžava vreme kompajliranja.
+Generičke strukture mogu da imaju najveći uticaj na veličinu izvršnog fajla. Problem se amortizuje 
+tako što se ne generišu metode za konkretan tip ako ih isti ne koristi u izvornom kodu.
+
 
 \newpage
 \subsection{Cargo}
@@ -216,7 +224,7 @@ koja prima dodatne kompajlerske opcije.
 
 \subsection{LLVM}
 
-Generisanje koda je ... \todo{dragon book}
+Generisanje koda je ... \todo{dragon book, medju reprezentacije koda, generisanje koda}
 \verb|Rust| jezik je \verb|frontend| nad \verb|LLVM|-om.
 LLVM je kolekcija modularnih i ponovo iskoristivih kompajlerskih tehnologija. LLVM je započeo 
 sa ciljem da pruži modernu kompilaciju zasnovanu na jedinstvenoj statičkoj dodeli (\verb|Static| \verb|Single| \verb|Assignment|).
@@ -416,61 +424,85 @@ edition = "2021"
 \label{lst:edition_toml}
 \end{listing}
 
+\newpage
 
+
+Podrazumevano ponašanje \verb|rustc| kompajlera moguće je promeniti upotrebom promenljivih okruženja 
+i zastavica funkcionalnosti (\verb|feature| \verb|flags|). Kompletan spisak omogućenih zastavica funkcionalnosti 
+za korišćeni skup alata se može prikazati upotrebom \verb|--help| opcije \verb|rustc| kompajlera \ref{lst:rustc_flags}.
+
+\begin{listing}[H]
+\begin{minted}{bash}
+    rustc --help -v 
+\end{minted}
+\caption{Prikaz svih omogućenih zastavica funkcionalnosti}
+\label{lst:rustc_flags}
+\end{listing}
+
+Glavni podskup zastavica funkcionalnosti se bavi generisanjem koda. Navode se korišćenjem \verb|-C| prefiksa. 
+Budući da generisanje koda izvršava 
+LLVM set alata, dostupan je širok dijapazon opcija. Nivoi optimizacije koda, kao i ciljani procesor za koji 
+se kod kompajlira su neka od bitnijih podešavanja. Zastavica \verb|emit| je izuzetno bitna jer omogućava izbor 
+dodatnih izlaznih artefakta koji se traže od kompajlera. Bitniji artefakti su LLVM bajtkod, LLVM medju 
+reprezentacija i asemblerski kod.
+
+\begin{listing}[H]
+\begin{minted}{bash}
+    cargo rustc -- --emit=llvm-bc
+    cargo rustc -- --emit=llvm-ir
+    cargo rustc -- --emit=asm
+\end{minted}
+\caption{Generisanje dodatnih izlaznih artefakta}
+\label{lst:emit_flag}
+\end{listing}
+
+
+\verb|Rust| se odlikuje sa dva načina kompilacije, kompletna 
+i inkrementalna. Kompletna kompilacija je podrazumevana i \verb|Crate| se kompajlira od početka svaki put.
+Inkrementalna kompilacija se uključuje uz pomoć zastavica funkcionalnosti gde se prilikom kompajliranja 
+beleže izlazi koji mogu da se iskoriste u narednom procesu kompajliranja \ref{lst:incremental_flag}. Inkrementalna kompilacija je 
+efektivna u slučaju da je \verb|Crate| veoma velik i smanjuje vreme sekvencijalnih kompilacija. Prilikom ovog 
+vida kompilacije čuva se značajno više podataka tj. dodatne performanse se dobijaju na uštrb memorije na disku.
+Samim time ovo nije efektivan metod kompajliranja u \verb|CI/CD| okruženjima jer agent koji vrši kompajliranje
+obično nije deterministički. Keširanje izlaza inkrementalne kompilacije i korišćenje istog u nesekvncijalnoj 
+kompilaciji može biti sporije nego kompletno kompajliranje usled bačenog procesorskog vremena na proveru 
+izlaza koji se ne mogu ponovo iskoristiti.
+
+\begin{listing}[H]
+\begin{minted}{text}
+    cargo rustc -- -C incremental=true 
+\end{minted}
+\caption{Inkrementalna kompilacija Crate-a}
+\label{lst:incremental_flag}
+\end{listing}
+
+
+Noćna verzija \verb|Rust| kompajlera se odlikuje proširenim skupom zastavica funkcionalnosti koje se zovu 
+nestabline zastavice funkcionalnosti. Navode se korišćenjem \verb|-Z| prefiksa. U ovom skupu se nalaze 
+zastavice koje su izuzetno korisne prilikom razvoja \verb|rustc|-a ali i zastavice koje se razvijaju
+i koje će potencijalno biti deo nove verzije \verb|rustc|-a. Jedna od najbitnijih zastavica u razvoju 
+jeste \verb|unpretty| koja može da prikaže izvorni kod u nekoj medju reprezentaciji kao što su
+apstraktno sintaksno stablo, visoka medju reprezentacija i srednja medju reprezetacija \ref{lst:intermediate_representation}.
+
+\begin{listing}[H]
+\begin{minted}{bash}
+    # Apstraktno sintaksno stablo 
+    cargo +nightly rustc -- -Z unpretty=ast-tree
+    # Visoka medju reprezentacija
+    cargo +nightly rustc -- -Z unpretty=hir
+    # Srednja medju reprezentacija
+    cargo +nightly rustc -- -Z unpretty=mir
+\end{minted}
+\caption{Prikaz medju reprezentacija izvornog koda}
+\label{lst:intermediate_representation}
+\end{listing}
 
 
 \newpage
 
-\section{Upotreba Rust kompajlera}
-
-\verb|Rust| kompajler \verb|rustc| sa sastoji iz izuzetno velikog broja modula. 
-Medjutim upotreba kompajlera je krajnje jednostavna.
-Izvorni kod se upiše u tekstualni dokument i poziva rustc naredba \ref{lst:rustc}, 
-nakon koje se kreira izvršni fajl pod istim imenom (pod uslovom da je kod ispravan).
-\begin{listing}[H]
-\begin{minted}{text}
-    rustc filename.rs
-\end{minted}
-\caption{Pokretanje kompajlera}
-\label{lst:rustc}
-\end{listing}
-Napredni korisnici Rust-a upotrebom promenljivih okruženja i zastavica funkcionalnosti 
-(\verb|feature flag|) uvode ili menjaju osnovno ponašanje \verb|rustc| kompajlera.
-Funkcionalnosti korisne za razvoj Rust kompajlera su omogućene samo u \verb|Nightly| verziji koje se
-ispoljavaju preko -Z (nestabilnih) zastavica. Stabilne i nestabilne zastavice se mogu prikazati upotrebom
-komandi iz isečka \ref{lst:rustc_flags}.
-
-\begin{listing}[H]
-\begin{minted}{text}
-    rustc -C help # stabilne zastavice 
-    rustc -Z help # nestabilne zastavice 
-\end{minted}
-\caption{Stabilne i nestabilne zastavice}
-\label{lst:rustc_flags}
-\end{listing}
-
-Prilikom razvoja programa napisanog u \verb|Rust|-u retko se koristi direktan poziv \verb|rustc|-u već mu 
-se implicitno pristupa preko menadžera paketa \verb|Cargo| \ref{lst:rustc_flags_2}. 
-
-\begin{listing}[H]
-\begin{minted}{text}
-    cargo build # pokretanje kompajlera
-    cargo rustc -- -C help # stabilne zastavice 
-    cargo rustc -- rustc -Z help # nestabilne zastavice 
-\end{minted}
-\caption{Kompajliranje, stabilne i nestabilne zastavice u "Cargo" paketnom menadžeru}
-\label{lst:rustc_flags_2}
-\end{listing}
 
 
-Rustc se odlikuje sa dva načina kompilacije: 
-\begin{enumerate}
-    \item Kompletna - \verb|Crate| se kompajlira od početka svaki put.
-    \item Inkrementalna - prilikom kompajliranja beleži se istorija koja se koristi u svakom narednom procesu kompajliranja (dobitak u brzini na uštrb memorije).
-\end{enumerate}
-
-
-\section{Reprezentacije izvornog koda}
+\section{Medju reprezentacije izvornog koda}
 
 Reprezentacije izvornog koda Rust-a se dele na:
 
@@ -892,7 +924,6 @@ let a: i32 = -1;
 \caption{"Shadowing"}
 \label{lst:shadowing}
 \end{listing}
-\newpage
 
 Jezici kao što je C pored kompajlera sadrže pre-procesor koji prikuplja izvorni kod. 
 Prilikom prikupljanja izvornog koda skraćenice (makroi) se proširuju na izraze programskog jezika. 
@@ -1180,6 +1211,14 @@ cargo rustc -- -Z dump-mir=[filter] -Z dump-mir-graphviz
 
 \newpage
 \section{Dodatak 1}
+
+\begin{listing}[H]
+\begin{minted}{rust}
+\end{minted}
+\caption{Dodavanje tela funkcije uz pomoć makroa}
+\label{lst:bonus_body_expand}
+\end{listing}
+
 
 \newpage
 \section{Podaci o kandidatu}
