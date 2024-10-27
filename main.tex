@@ -575,7 +575,6 @@ pub fn tokenize(input: &str) -> impl Iterator<Item = Token> + '_ {
 \label{lst:tokenize}
 \end{listing}
 
-\newpage
 Implementacija je bazirana na kursoru i unutar te strukture se nalazi celokupna logika leksera. 
 Kursor je realizovan pomoću Rust-ovog iteratora i na osnovu njega prati trenutnu poziciju 
 unutar izvornog koda. Veoma je bitna mogućnost gledanja ispred (\verb|look-ahead|) koja omogućava 
@@ -941,21 +940,25 @@ omogućavaju odredjene delove netačne sintakse kao što je funkcija bez tela va
 
 \begin{listing}[H]
 \begin{minted}{rust}
-#[attribute]
-mod foo {
-    fn missing_body();
+#[proc_macro_attribute]
+pub fn expand_body(_attr: TokenStream, _item: TokenStream) -> TokenStream {
+    let fun = format!("fn missing_body() 
+    {{ println!(\"I'm not missing body anymore.\"); }}");
+    let stream: TokenStream = fun.parse().unwrap();
+    stream
+}
+#[expand_body]
+fn missing_body();
+fn main() {
+    missing_body();
 }
 \end{minted}
-\caption{"Netačna sintaksa pre ekspanzije"}
+\caption{Dodavanje tela funkcije uz pomoć makroa}
 \label{lst:validate}
 \end{listing}
-\todo{Mogu da napišem makro koji bi proširio telo funkcije, da li da dodam?}
 
 Apstraktno sintaksno stablo pre i posle ekspanzije nekog \verb|Crate|-a se može analizirati pomoću 
 nestabilnih \verb|-Z| zastavica \ref{lst:rustc_ast}.
-
-\todo{Sam prikaz AST-a nije naročito interesantan, a čak i za najjednostavnije programe a + b ume da bude 
-pozamašne dužine}
 
 \begin{listing}[H]
 \begin{minted}{bash}
@@ -1214,6 +1217,22 @@ cargo rustc -- -Z dump-mir=[filter] -Z dump-mir-graphviz
 
 \begin{listing}[H]
 \begin{minted}{rust}
+#[proc_macro_attribute]
+pub fn expand_body(_attr: TokenStream, _item: TokenStream) -> TokenStream {
+    let fun = format!("fn missing_body() 
+    {{ println!(\"I'm not missing body anymore.\"); }}");
+
+    let stream: TokenStream = fun.parse().unwrap();
+
+    stream
+}
+
+#[expand_body]
+fn missing_body();
+
+fn main() {
+    missing_body();
+}
 \end{minted}
 \caption{Dodavanje tela funkcije uz pomoć makroa}
 \label{lst:bonus_body_expand}
