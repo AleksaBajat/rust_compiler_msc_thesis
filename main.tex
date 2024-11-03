@@ -222,9 +222,46 @@ koja prima dodatne kompajlerske opcije.
 
 \newpage
 
-\subsection{LLVM}
+\subsection{LLVM projekat}
 
-Generisanje koda je ... \todo{dragon book, medju reprezentacije koda, generisanje koda}
+Generisanje koda je jedan od najtežih zadataka prilikom kreiranja novog kompajlera. Izvorni kod koji 
+korisnici pišu se prevodi u mašinski kod i pre svega mora biti tačan. Pored tačnosti cilj prilikom 
+dizajniranja generatora koda jeste laka implementacija, testiranje i održavanje.
+Prilikom prevodjenja obično postoji 
+više medju reprezentacija izvornog koda sa ciljem da validira i optimizuje izvorni kod. Medju reprezentacije 
+se svrstavaju u \verb|frontend| ili u \verb|backend|. \verb|Frontend| ima za zadatak da skenira, parsira 
+i prevede izvorni kod u relativno nisku medju reprezentaciju. \verb|Backend| stoga može da pretpostavi 
+da su sve statičke sintaktičke i semantičke greške detektovane i da su tipovi i njihove konverzije
+obradjene na osnovu čega optimizuje i generiše kod za ciljanu arhitekturu.
+
+LLVM projekat je skup modularnih i ponovo iskoristivih kompajlerskih tehnologija. Pod okriljem \verb|LLVM|-a
+se nalaze brojni projekti. Glavni projekat je \verb|LLVM| \verb|Core| unutar koga je specificirana \verb|LLVM|
+medju reprezentacija (\verb|LLVM| \verb|IR|) na kojoj se zasniva modularnost. Nad \verb|LLVM| medju reprezentacijom
+je implementiran optmizator čiji kod se prosledjuje generatoru (\verb|backend|-u) koda cljane arhitekture. Samim time 
+bilo koji \verb|frontend| koji se napiše tako da je krajnji izlaz \verb|LLVM| \verb|IR| može da iskoristi 
+ostale delove kompajlera bez ikakvih dodatnih izmena \ref{lst:llvm_modular}.
+
+\begin{listing}[H]
+\begin{center}
+\includegraphics[width=5in, height=1.8in]{assets/images/modern_compiler_design.png}
+\end{center}
+\caption{Modularnost LLVM-a}
+\label{lst:llvm_modular}
+\end{listing}
+
+Postoje brojne vrste optimizacije koje se mogu izvršiti nad izvornim kodom. Optimizacije se obično svode 
+na tri osnovna koraka, pronalazak šablona koji se treba transformisati, validirati da li je bezbedno primeniti 
+transformaciju i izvršavanje transformacije. Optimizacije u \verb|LLVM| optmizatoru su modularne i izvršavaju 
+se nad \verb|LLVM| medju reprezentacijom. Svaka \verb|LLVM| optmizacija je napisana kao \verb|C++| klasa koja 
+nasledjuje \verb|Pass| (prolazak) klasu. Većina prolazaka je napisana u jedanom \verb|.cpp| fajlu.
+Stoga otvara se mogućnost da se dodaju optimizacije specifične za jezik. Svaki prolazak se kompajlira u jedan 
+ili više objekat (\verb|.o|) fajlova koji se potom grupišu u arhivne (\verb|.a|) fajlove. Objektni fajlovi 
+su mašinski kod pre procesa linkovanja. Prilikom procesa linkovanja 
+nekog \verb|.o| fajla sa \verb|.a| fajlom linker će za svaki do sada nespojen simbol probati da nadje 
+vezu u svim \verb|.o| fajlovima arhive.
+
+
+
 \verb|Rust| jezik je \verb|frontend| nad \verb|LLVM|-om.
 LLVM je kolekcija modularnih i ponovo iskoristivih kompajlerskih tehnologija. LLVM je započeo 
 sa ciljem da pruži modernu kompilaciju zasnovanu na jedinstvenoj statičkoj dodeli (\verb|Static| \verb|Single| \verb|Assignment|).
@@ -538,7 +575,7 @@ ali cilj je da se i oni refaktorišu kako bi koristili upite.
 
 \begin{listing}[H]
 \begin{center}
-\includegraphics[width=2.5in, height=4.5in]{compilation.png}
+\includegraphics[width=2.5in, height=4.5in]{assets/images/compilation.png}
 \end{center}
 \caption{Proces kompajliranja u prednjem kraju rustc-a}
 \label{lst:compiler}
