@@ -1,0 +1,34 @@
+digraph {
+    node[shape=record]
+    rankdir = LR
+    
+
+    cFrontend[
+        label = "C frontend"
+    ]
+
+    fortranFrontend[
+        label = "Fortran frontend"
+    ]
+
+    adaFrontend[
+        label = "Ada frontend"
+    ]
+
+    commonOptimizer[
+        label = "Zajednički optimizator"
+    ]
+
+    x86Backend[
+        label = "x86 backend"
+    ]
+    ARMBackend[
+        label = "ARM backend"
+    ]
+    PowerPCBackend[
+        label = "Power PC backend"
+    ]
+
+    cFrontend, fortranFrontend, adaFrontend -> commonOptimizer;
+    commonOptimizer -> x86Backend, ARMBackend, PowerPCBackend
+}
