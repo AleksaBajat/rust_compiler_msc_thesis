@@ -1,27 +1,24 @@
 digraph {
+    node[shape = record]
+
+
     sourceCode[
         label = "Izvorni kod"
-        shape = record
     ]
     tokenStream[
         label = "Tok tokena"
-        shape = record
     ]
     ast[
         label = "Apstraktno sintaksno stablo"
-        shape = record
     ]
     hir[
         label = "Reprezentacija visokog nivoa"
-        shape = record
     ]
     thir[
         label = "Tipizirana reprezentacija visokog nivoa"
-        shape = record
     ]
     mir[
         label = "Reprezentacija srednjeg nivoa"
-        shape = record
     ]
 
     sourceCode->tokenStream[

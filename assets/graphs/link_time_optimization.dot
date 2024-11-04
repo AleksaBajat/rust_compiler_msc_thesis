@@ -1,0 +1,45 @@
+digraph{
+    node[shape=record]
+    rankdir = LR
+
+    subgraph cluster_compile{
+        label = "Vreme kompajliranja"
+
+        cFrontend[
+            label = "C frontend"
+        ]
+        "a.c", "b.c", "c.c" -> cFrontend -> llvmOptimizer1
+        llvmOptimizer1 -> "a.o", "b.o", "c.o"
+
+
+        fortranFrontend[
+            label = "Fortran frontend"
+        ]
+        "d.f", "e.f" -> fortranFrontend -> llvmOptimizer2
+        llvmOptimizer2 -> "f.o", "e.o"
+    }
+
+    subgraph cluster_link{
+        label = "Vreme linkovanja"
+
+        "a.o", "b.o", "c.o" -> llvmLinker
+        "f.o", "e.o" -> llvmLinker
+        llvmLinker[
+            label = "LLVM linker"
+        ]
+        llvmOptimizer1[
+            label = "LLVM optimizator (1)"
+        ]
+        llvmOptimizer2[
+            label = "LLVM optimizator (2)"
+        ]
+        llvmOptimizer3[
+            label = "LLVM optimizator (3)"
+        ]
+        llvmBackend[
+            label = "LLVM backend"
+        ]
+
+        llvmLinker -> llvmOptimizer3 -> llvmBackend
+    }
+}
