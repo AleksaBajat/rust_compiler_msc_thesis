@@ -4,16 +4,16 @@
 \contentsline {subsection}{\numberline {3.1}Rust jezik}{10}{subsection.3.1}%
 \contentsline {subsection}{\numberline {3.2}Cargo}{12}{subsection.3.2}%
 \contentsline {subsection}{\numberline {3.3}LLVM projekat}{13}{subsection.3.3}%
-\contentsline {section}{\numberline {4}Rust kompajler}{14}{section.4}%
-\contentsline {section}{\numberline {5}Medju reprezentacije izvornog koda}{18}{section.5}%
+\contentsline {section}{\numberline {4}Rust kompajler}{15}{section.4}%
+\contentsline {section}{\numberline {5}Medju reprezentacije izvornog koda}{19}{section.5}%
 \contentsline {subsection}{\numberline {5.1}Tok tokena}{19}{subsection.5.1}%
-\contentsline {subsubsection}{\numberline {5.1.1}rustc\_lexer}{19}{subsubsection.5.1.1}%
+\contentsline {subsubsection}{\numberline {5.1.1}rustc\_lexer}{20}{subsubsection.5.1.1}%
 \contentsline {subsubsection}{\numberline {5.1.2}rustc\_parse::lexer}{21}{subsubsection.5.1.2}%
-\contentsline {subsection}{\numberline {5.2}Apstraktno Sintaksno Stablo}{24}{subsection.5.2}%
-\contentsline {subsection}{\numberline {5.3}Posredna Reprezentacija Visokog Nivoa - HIR (High-Level Intermediate Representation)}{27}{subsection.5.3}%
-\contentsline {subsection}{\numberline {5.4}Tipizirana Posredna Reprezentacija Visokog Nivoa - THIR (Typed High-Level Intermediate Representation)}{28}{subsection.5.4}%
-\contentsline {subsection}{\numberline {5.5}Posredna Reprezentacija Srednjeg Nivoa - MIR (Mid-Level Intermediate Representation)}{29}{subsection.5.5}%
-\contentsline {section}{\numberline {6}Zaključak}{31}{section.6}%
-\contentsline {section}{\numberline {7}Literatura}{32}{section.7}%
-\contentsline {section}{\numberline {8}Dodatak 1}{33}{section.8}%
-\contentsline {section}{\numberline {9}Podaci o kandidatu}{34}{section.9}%
+\contentsline {subsection}{\numberline {5.2}Apstraktno Sintaksno Stablo}{25}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Posredna Reprezentacija Visokog Nivoa - HIR (High-Level Intermediate Representation)}{28}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}Tipizirana Posredna Reprezentacija Visokog Nivoa - THIR (Typed High-Level Intermediate Representation)}{29}{subsection.5.4}%
+\contentsline {subsection}{\numberline {5.5}Posredna Reprezentacija Srednjeg Nivoa - MIR (Mid-Level Intermediate Representation)}{30}{subsection.5.5}%
+\contentsline {section}{\numberline {6}Zaključak}{32}{section.6}%
+\contentsline {section}{\numberline {7}Literatura}{33}{section.7}%
+\contentsline {section}{\numberline {8}Dodatak 1}{34}{section.8}%
+\contentsline {section}{\numberline {9}Podaci o kandidatu}{35}{section.9}%

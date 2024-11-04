@@ -234,7 +234,7 @@ i prevede izvorni kod u relativno nisku medju reprezentaciju. \verb|Backend| sto
 da su sve statičke sintaktičke i semantičke greške detektovane i da su tipovi i njihove konverzije
 obradjene na osnovu čega optimizuje i generiše kod za ciljanu arhitekturu.
 
-LLVM projekat je skup modularnih i ponovo iskoristivih kompajlerskih tehnologija. Pod okriljem \verb|LLVM|-a
+LLVM projekat je skup modularnih i ponovo iskoristivih kompajlerskih tehnologija \cite{llvm}. Pod okriljem \verb|LLVM|-a
 se nalaze brojni projekti. Glavni projekat je \verb|LLVM| \verb|Core| unutar koga je specificirana \verb|LLVM|
 medju reprezentacija (\verb|LLVM| \verb|IR|) na kojoj se zasniva modularnost. Nad \verb|LLVM| medju reprezentacijom
 je implementiran optmizator čiji kod se prosledjuje generatoru (\verb|backend|-u) koda cljane arhitekture. Samim time 
@@ -243,7 +243,7 @@ ostale delove kompajlera bez ikakvih dodatnih izmena \ref{lst:llvm_modular}.
 
 \begin{listing}[H]
 \begin{center}
-\includegraphics[width=5in, height=1.8in]{assets/images/modern_compiler_design.png}
+\includegraphics[width=5in, height=1.6in]{assets/images/modern_compiler_design.png}
 \end{center}
 \caption{Modularnost LLVM-a}
 \label{lst:llvm_modular}
@@ -251,24 +251,75 @@ ostale delove kompajlera bez ikakvih dodatnih izmena \ref{lst:llvm_modular}.
 
 Postoje brojne vrste optimizacije koje se mogu izvršiti nad izvornim kodom. Optimizacije se obično svode 
 na tri osnovna koraka, pronalazak šablona koji se treba transformisati, validirati da li je bezbedno primeniti 
-transformaciju i izvršavanje transformacije. Optimizacije u \verb|LLVM| optmizatoru su modularne i izvršavaju 
+transformaciju i izvršavanje transformacije \cite{oss-architecture}. Optimizacije u \verb|LLVM| optmizatoru su modularne i izvršavaju 
 se nad \verb|LLVM| medju reprezentacijom. Svaka \verb|LLVM| optmizacija je napisana kao \verb|C++| klasa koja 
 nasledjuje \verb|Pass| (prolazak) klasu. Većina prolazaka je napisana u jedanom \verb|.cpp| fajlu.
 Stoga otvara se mogućnost da se dodaju optimizacije specifične za jezik. Svaki prolazak se kompajlira u jedan 
-ili više objekat (\verb|.o|) fajlova koji se potom grupišu u arhivne (\verb|.a|) fajlove. Objektni fajlovi 
-su mašinski kod pre procesa linkovanja. Prilikom procesa linkovanja 
-nekog \verb|.o| fajla sa \verb|.a| fajlom linker će za svaki do sada nespojen simbol probati da nadje 
-vezu u svim \verb|.o| fajlovima arhive.
+ili više relokatabilnih objekata, (\verb|.o|) fajlova koji se potom grupišu u arhivne (\verb|.a|) fajlove. Objektni fajlovi 
+su mašinski kod pre procesa linkovanja. Linkovanje je proces skupljanja i kombinovanja relokatabilnih objektnih fajlova
+u jedan izvršni objektni fajl. Prilikom linkovanja nekog \verb|.o| fajla sa \verb|.a| fajlom linker će 
+za svaki do tada nespojen simbol probati da nadje vezu u svim \verb|.o| fajlovima arhive.
+
+\verb|LLVM| generator koda je odgovaran za prevodjenje \verb|LLVM| medju reprezentacije u mašinski kod ciljane 
+arhitekture. Idealno za svaku arhitekturu postojao bi specifičan kod za prevodjenje, ali u isto vreme 
+svi generatori rade vrlo sličan posao. Slično kao i kod optimizacije proces generisanja koda se deli u prolaske,
+izbor seta instrukcija, način alokacije registara, planiranje (\verb|scheduling|), optimizacija rasporeda 
+koda i generisanje asemblerskog koda. Pri kreiranju generatora za novu ciljnu arhitekturu svaki od ovih prolazaka
+može ponovo da se iskoristi, modifikuje ili potpuno zameni.
+
+\verb|LLVM| medju reprezentacija se veoma efikasno serijalizuje u i deserializuje iz \verb|LLVM| bitkoda. 
+Ova efikasnost otvara mogućnost za optimizaciju u vreme linkovanja \ref{lst:link_time_opt}. To je još jedan set optimizacionih prolazaka 
+koji dodatno poboljšava kranji mašinski kod. Linker prepoznaje da se u \verb|.o| fajlovima nalazi 
+\verb|LLVM| bitkod umesto mašinskog koda, učitava ih u memoriju, linkuje ih, a potom izvršava \verb|LLVM|
+optimizator nad mnogo većom celinom koda, omogućavajući daleko agresivnije optimizacije. 
+Ova opcija se uključuje dodavanjem \verb|-O4| opcije komandne linije. 
+
+\begin{listing}[H]
+\begin{center}
+\includegraphics[width=6in, height=2.2in]{assets/images/link_time_optimization.png}
+\end{center}
+\caption{Optimizacija u vreme linkovanja}
+\label{lst:link_time_opt}
+\end{listing}
+
+\verb|LLVM| medju reprezentacija podesća na asemblerski jezik. Strogo je tipiziran i poseduje jednostavne 
+tipove poput celih brojeva, brojeva sa pokretnim zarezom, pokazivača i struktura. Jedna od glavnih razlika 
+u odnosu na asembler jeste to što ne koristi ograničeni broj imenovanih registara već koristi beskonačan 
+skup promenljivih koje se definišu sa \verb|%| prefiksom. Neki detalji mašine su apstrahovani od korisnika 
+poput poziva funkcija (\verb|call|) i vraćanja vrednosti (\verb|ret|) \ref{lst:llvm_ir}.
+
+\begin{listing}[H]
+\begin{minted}{llvm}
+define i32 @add2(i32 %a, i32 %b) {
+entry:
+  %tmp1 = icmp eq i32 %a, 0
+  br i1 %tmp1, label %done, label %recurse
+
+recurse:
+  %tmp2 = sub i32 %a, 1
+  %tmp3 = add i32 %b, 1
+  %tmp4 = call i32 @add2(i32 %tmp2, i32 %tmp3)
+  ret i32 %tmp4
+
+done:
+  ret i32 %b
+}
+\end{minted}
+\caption{LLVM medju reprezentacija}
+\label{lst:llvm_ir}
+\end{listing}
+
+\verb|Rust| jezik je \verb|frontend| nad \verb|LLVM|-om. Postoji puno olakšica u ovom pristupu.
+\verb|Rust| tim ima cilj da izgeneriše pravilnu \verb|LLVM| medju reprezentaciju, na osnovu koje 
+\verb|LLVM| izvršava optimizacione prolaske i generiše kod. Greške prilikom generisanja koda ne mora da 
+održava \verb|Rust| tim, što značajno smanjuje količinu ljudi koja aktivno mora da bude uključena u razvoj. 
+Svaka distribucija koju \verb|LLVM| podržava automatski podržava i \verb|Rust|. Optimizacije se ne moraju 
+posebno pisati i održavati jer \verb|LLVM| već poseduje značajan broj čestih optimizacija. \verb|Rust| 
+omogućava kompajliranje na osnovu više \verb|LLVM| verzija, poslednja glavna verzija je uvek podržana,
+i obično su podržane jedna ili dve ispod nje.
 
 
 
-\verb|Rust| jezik je \verb|frontend| nad \verb|LLVM|-om.
-LLVM je kolekcija modularnih i ponovo iskoristivih kompajlerskih tehnologija. LLVM je započeo 
-sa ciljem da pruži modernu kompilaciju zasnovanu na jedinstvenoj statičkoj dodeli (\verb|Static| \verb|Single| \verb|Assignment|).
-Jedinstvena statička dodela se bazira na tome da je vrednost svake promenljive dodeljena tačno jedan put. Višestruke dodele 
-nad istom promenljivom kreiraju nove verzije te varijable. LLVM modifikuje posrednu reprezentaciju tako da svaki put 
-kada se nova promenljiva dodeli u kodu zameni dodelu za kreiranje nove verzije.
-Različite verzije promenljivih se razlikuju tako što se na ime promenljive pridodaje redni broj verzije.
 \newpage
 \section{Rust kompajler}
 
@@ -480,7 +531,7 @@ Glavni podskup zastavica funkcionalnosti se bavi generisanjem koda. Navode se ko
 Budući da generisanje koda izvršava 
 LLVM set alata, dostupan je širok dijapazon opcija. Nivoi optimizacije koda, kao i ciljani procesor za koji 
 se kod kompajlira su neka od bitnijih podešavanja. Zastavica \verb|emit| je izuzetno bitna jer omogućava izbor 
-dodatnih izlaznih artefakta koji se traže od kompajlera. Bitniji artefakti su LLVM bajtkod, LLVM medju 
+dodatnih izlaznih artefakta koji se traže od kompajlera. Bitniji artefakti su LLVM bitkod, LLVM medju 
 reprezentacija i asemblerski kod.
 
 \begin{listing}[H]
@@ -541,26 +592,39 @@ apstraktno sintaksno stablo, visoka medju reprezentacija i srednja medju repreze
 
 \section{Medju reprezentacije izvornog koda}
 
-Reprezentacije izvornog koda Rust-a se dele na:
+Prilikom kompajliranja \verb|Rust| izvornog koda, \verb|Rust| \verb|frontend| mora da osigura da je 
+kod sintaktički i semantički tačan da bi mogao da izgeneriše pravilnu \verb|LLVM| medju reprezentaciju 
+na osnovu koje se generiše mašinski kod. Da bi se ovo efektivno izvelo \verb|Rust| \verb|frontend| poseduje 
+sopstvene medju reprezentacije koje obavljaju distinktne dužnosti. 
 
-\begin{enumerate}    
-    \item Tok tokena
-    \item Apstraktno sintaksno stablo
-    \item Reprezentacija visokog nivoa
-    \item Tipizirana reprezentacija visokog nivoa
-    \item Reprezentacija srednjeg nivoa
-    \item LLVM reprezentacija
-\end{enumerate}
-Sa stanovišta \verb|frontend|-a \verb|rustc| kompajlera interesantni su prvih pet nivoa. Šesti nivo generacije 
-koda se naziva \verb|backend| i predstavlja \verb|FFI| (\verb|Foreign| \verb|Function| \verb|Interface|) sloj izmedju \verb|Rust|-a i \verb|C++|-a
-(\verb|LLVM| je napisan u \verb|C++-u|). 
+Leksički analizator ili lekser je ulazna tačka kompajlera. Lekser čita izvorni kod kao tok karaktera i grupiše karaktere 
+u sekvence koje imaju značenje. Ovaj proces se naziva leksička analiza ili skeniranje, a sekvence karaktera se nazivaju lekseme. 
+Za svaku leksemu leksički analizator proizvodi token. Tokeni se obično sastoje od tipa i vrednosti.
+Leksički analizator je obično najjednostavniji deo kompajlera za implementirati. 
+Uobičajno je da se lekseri programskih jezika implementiraju kao konačni automat uz pomoć alata kao što 
+je \verb|Flex|. Ipak, u \verb|Rust| jeziku lekser je implementiran ručno, što omogućava finu granularnost 
+i visoku kontrolu nad procesom tokenizacije. Imajući u vidu da je jedan od ciljeva \verb|Rust| jezika 
+da poseduje veoma detaljne i korisne poruke o grešci, ovo je vrlo promišljena implementaciona odluka. 
+Tok tokena nije naročito korisna forma za analizu.
 
-U tipično struktuiranom kompajleru svaka od prethodno navedenih reprezentacija koda predstavlja 
-naizgled poseban program i zasebno izvršavanje. Ovakvi kompajleri se takodje nazivaju 
+Naredni korak u procesu kompaljiranja jeste parser koji vrši sintaksnu analizu ili parsiranje. 
+Parser koristi tokene koje je izgenerisao lekser da bi kreirao strukturu oblika stabla koja se naziva 
+apstraktno sintaksno stablo. Apstraktno sintaksno stablo eksplicitno naznačava prvenstvo operatora,
+i relativno ga je lako validirati.
+
+Poslednji korak u \verb|Rust| \verb|frontend|-u jeste semantička analiza. Semantička analiza se sprovodi 
+kroz tri medju reprezentacije, reprezentacija visokog nivoa, tipizirana reprezentacija visokog nivoa
+i reprezentacija srednjeg nivoa. Bitan deo semantičke analize jeste provera tipova gde kompajler proverava 
+da li svaki operator ima operande koji se poklapaju. U drugim jezicima često je postojanje implicitnih 
+konverzija jednog tipa u drugi, ova funkcionalnost nije postojana u \verb|Rust| jeziku. Svaka konverzija 
+mora biti eksplicitno navedena od strane korisnika.
+
+U tipično struktuiranom kompajleru svaka od prethodno navedenih medju reprezentacija koda predstavlja 
+poseban program i zasebno izvršavanje. Ovakvi kompajleri se nazivaju 
 kompajleri zasnovani na prolascima. \verb|Rust|-ov kompajler je u tranziciji izmedju 
 kompajlera zanovanog na prolascima i kompajlera zasnovanog na potražnji. Kompajler 
 zasnovan na potražnji umesto da radi na principu arhitekture sa cevima (\verb|pipeline|)
-koristi upite (\verb|query|) nad izvornim kodom i simultono izvršava ceo proces.
+koristi upite (\verb|query|) nad izvornim kodom i simultono izvršava celokupan proces.
 
 Izvršavanje upita je memoizovano. Prvi put kada se upit pozove, izvršiće se komputacije 
 vezane za taj upit. Naredni poziv istog upita rezultat dobavlja iz rečnika.
@@ -573,20 +637,12 @@ nakon kreiranja apstraktnog sintaksnog stabla, zasniva na upitima.
 Lekser i parser još uvek funkcionišu na osnovu prolazaka, 
 ali cilj je da se i oni refaktorišu kako bi koristili upite.
 
-\begin{listing}[H]
-\begin{center}
-\includegraphics[width=2.5in, height=4.5in]{assets/images/compilation.png}
-\end{center}
-\caption{Proces kompajliranja u prednjem kraju rustc-a}
-\label{lst:compiler}
-\end{listing}
+Ulazna tačka kompajlera u \verb|rustc| izvornom kodu se nalazi u \verb|rustc_driver_impl| \verb|crate|-u
+koji poseduje funkciju \verb|run_compiler|. Ova funkcija daje veoma dobar pregled toka kompajliranja 
+i značajna je tačka prlikom upoznavanja sa izvornim kodom. 
 
 \subsection{Tok tokena}
 
-Uobičajno je da se lekseri programskih jezika implementiraju kao konačni automat uz pomoć alata kao što je
-\verb|Flex|. Ipak, u jeziku Rust lekser je implementiran ručno. Ovo omogućava finu granularnost i visoku 
-kontrolu nad procesom tokenizacije. Sa obzirom da je cilj Rust-a transparentne i korisne poruke o 
-grešci, ovo je vrlo promišljena implementaciona odluka.
 Kompajler poseduje naizgled dva leksera. Lekser niskog nivoa je \verb|rustc_lexer|, a lekser visokog nivoa je \verb|rustc_parse::lexer|. 
 Obe implementacije su važne jer \verb|rusc_parse::lexer| koristi \verb|rustc_lexer| tokom kompajliranja.
 
@@ -599,7 +655,6 @@ izvornog koda dobavlja skup tokena tj. leksema \ref{lst:tokenize}.
 
 \begin{listing}[H]
 \begin{minted}{rust}
-/// Creates an iterator that produces tokens from the input string.
 pub fn tokenize(input: &str) -> impl Iterator<Item = Token> + '_ {
     let mut cursor = Cursor::new(input);
     std::iter::from_fn(move || {
@@ -620,23 +675,16 @@ Kloniranje iteratora je jeftina operacija jer se svodi na kopiranje trenutne adr
 
 \begin{listing}[H]
 \begin{minted}{rust}
-    /// Peeks the first symbol from the input stream without consuming it.
     pub fn first(&self) -> char {
         // `.next()` optimizes better than `.nth(0)`
         self.chars.clone().next().unwrap_or(EOF_CHAR)
     }
-
-    /// Peeks the second symbol from the input stream without consuming it.
     pub(crate) fn second(&self) -> char {
-        // `.next()` optimizes better than `.nth(1)`
         let mut iter = self.chars.clone();
         iter.next();
         iter.next().unwrap_or(EOF_CHAR)
     }
-
-    /// Peeks the third symbol from the input stream without consuming it.
     pub fn third(&self) -> char {
-        // `.next()` optimizes better than `.nth(1)`
         let mut iter = self.chars.clone();
         iter.next();
         iter.next();
@@ -697,8 +745,48 @@ Interniranje je proces u kome se stringovi pretvaraju internirane simbole. Na ov
 se čuva samo jedna nepromenljiva kopija sadržaja tokena. Tabela simbola je struktura podataka
 koja čuva i održava O(1) pristup bilo kom simbolu.  Tabela simbola je implementirana pomoću \verb|IndexSet|
 strukture. Ne internira se svaki token, već samo tokeni koji imaju varijabilnu dužinu.
-\todo{Interniranje u pozadini koristi SpanData strukturu, u zavisnosti od specifičnih okolnosti
-može koristiti manje ili veće Span-ove. Bitno je, ali nisam siguran da li zalaziti toliko u samu implementaciju.}
+
+Prilikom interniranja koristi se \verb|SpanData| struktura koja ima 16 bajta. Još jedna struktura koja 
+se koristi jeste \verb|Span| koja ima 8 bajta što znači manje prostora za dužinu, roditelja i kontekst. 
+Procentualno, preko 99.9\%  \verb|SpanData| instanci mogu da stanu u tih 8 bajta. Svaki \verb|SpanData|
+čija polja ne mogu da ispune ovaj kriterijum se čuvaju u tabeli simbola i \verb|Span| će izvlačiti podatke 
+odatle. Interniranje je dovoljno retko da je cena niska, ali dovoljno često da pruža poboljšanje. 
+Ranije verzije \verb|Rust| kompajlera koristile su samo 4 bajta za \verb|Span|, ali to je bilo sporije 
+jer se samo 90\% \verb|Span|-ova moglo sadržati bez pristupanja tabeli simbola.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+#[derive(Clone, Copy, Eq, PartialEq, Hash)]
+#[rustc_pass_by_value]
+pub struct Span {
+    lo_or_index: u32,
+    len_with_tag_or_marker: u16,
+    ctxt_or_parent_or_marker: u16,
+}
+\end{minted}
+\caption{Definicija "Span" strukture}
+\end{listing}
+
+
+\begin{listing}[H]
+\begin{minted}{rust}
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+#[derive_where(PartialOrd, Ord)]
+pub struct SpanData {
+    pub lo: BytePos,
+    pub hi: BytePos,
+    #[derive_where(skip)]
+    pub ctxt: SyntaxContext,
+    #[derive_where(skip)]
+    pub parent: Option<LocalDefId>,
+}
+\end{minted}
+\caption{Definicija "SpanData" strukture}
+\end{listing}
+
+Postoji četiri različita formata \verb|Span|-a, \verb|inline|-\verb|context| format, \verb|inline|-\verb|parent| format,
+\verb|partially|-\verb|interned| format i \verb|fully-interned| format.  Prepoznaju se na osnovu vrednosti polja.
+
 
 Mapiranje tokena iz leksera u tip tokena iz apstraktnog sintaksnog stabla je trivialno.
 Za proste tipove vrši se jedan na jedan konverzija.
@@ -1238,7 +1326,7 @@ cargo rustc -- -Z dump-mir=[filter] -Z dump-mir-graphviz
     \url{https://doc.rust-lang.org/unstable-book/index.html} (pristupljeno Okt. 06, 2024).
 
     \bibitem{unstable-flagsunstable}
-    Li, Chenghao, et al. “Demystifying Compiler Unstable Feature Usage and Impacts in the Rust Ecosystem.” 26 Oct. 2023. arXiv, Accessed 6 Oct. 2024. 
+    Li, Chenghao, et al. “Demystifying Compiler Unstable Feature Usage and Impacts in the Rust Ecosystem.” 26 Oct. 2023. arXiv, Pristupljeno 6 Oct. 2024. 
 
     \bibitem{rust-language}
     Bugden W, Alahmar A. Rust: The programming language for safety and performance. arXiv preprint arXiv:2206.05503. 2022 Jun 11.
@@ -1246,7 +1334,14 @@ cargo rustc -- -Z dump-mir=[filter] -Z dump-mir-graphviz
     \bibitem{supply-chain}
     P. Mainardi, “The Rising Threat of Software Supply Chain Attacks: Managing Dependencies of Open Source projects,” Linuxfoundation.eu, Aug. 15, 2023.
     \url{https://linuxfoundation.eu/newsroom/the-rising-threat-of-software-supply-chain-attacks-managing-dependencies-of-open-source-projects} (pristupljeno Okt. 20, 2024).
-‌
+
+    \bibitem{oss-architecture}
+    “The Architecture of Open Source Applications (Volume 1)LLVM,” Aosabook.org, 2024. 
+    \url{https://aosabook.org/en/v1/llvm.html} (pristupljeno Nov. 04, 2024).
+
+    \bibitem{llvm}
+    “The LLVM Compiler Infrastructure Project,” Llvm.org, 2024. 
+    \url{https://llvm.org/} (pristupljeno Nov. 04, 2024).
 \end{thebibliography}
 
 \newpage
