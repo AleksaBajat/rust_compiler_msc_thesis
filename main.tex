@@ -741,10 +741,13 @@ Prolaskom kroz izvorni kod izvršavaju se sledeće akcije:
     \item Problemi i preporuke generišu dijagnostiku 
 \end{enumerate}
 
-Interniranje je proces u kome se stringovi pretvaraju internirane simbole. Na ovaj način
-se čuva samo jedna nepromenljiva kopija sadržaja tokena. Tabela simbola je struktura podataka
-koja čuva i održava O(1) pristup bilo kom simbolu.  Tabela simbola je implementirana pomoću \verb|IndexSet|
-strukture. Ne internira se svaki token, već samo tokeni koji imaju varijabilnu dužinu.
+Interniranje je optmizacija performansi i memorije gde se vrednosti alociraju unutar 
+posebnog alokatora koji se naziva \verb|arena|. Svaka ovako alocirana vrednost se prenosi po 
+referenci što omogućava da se identične vrednosti u programu alociraju jednom. Poredjenja
+su takodje značajno jeftinija jer je moguće samo porediti memorijske adrese. 
+Internirana vrednost se naziva simbol. Tabela simbola je struktura podataka
+koja skladišti i omogućava O(1) pristup bilo kom simbolu.  Tabela simbola je implementirana pomoću \verb|IndexSet|
+strukture. Ne internira se svaki token, već samo tokeni koji imaju varijabilnu dužinu značajne veličine.
 
 Prilikom interniranja koristi se \verb|SpanData| struktura koja ima 16 bajta. Još jedna struktura koja 
 se koristi jeste \verb|Span| koja ima 8 bajta što znači manje prostora za dužinu, roditelja i kontekst. 
@@ -1095,19 +1098,19 @@ cargo rustc -- -Z unpretty=ast,expanded
 \end{listing}
 
 \newpage
-\subsection{Posredna Reprezentacija Visokog Nivoa - HIR (High-Level Intermediate Representation)}
+\subsection{Medju Reprezentacija Visokog Nivoa - HIR (High-Level Intermediate Representation)}
 
 \todo{try mark green algoritam}
 
-Posredna reprezentacija visokog nivoa je primarna posredna reprezentacija koja se koristi 
-u većinskom delu \verb|rustc| kompajlera. HIR je posledica snižavanja (\verb|lowering|). 
-Tokom procesa snižavanja, neke forme izražavanja bivaju pojednostavljene (\verb|desugared|):
-\begin{enumerate}
-    \item Zagrade se uklanjaju jer struktura stabla eksplicitno odredjuje redosled operacija.
-    \item for petlje su konvertovane u while(let) petlje \ref{lst:hir_iter}.
-    \item if let se konvertuje u match.
-    \item impl u parametrima funkcije se konvertuje u generičke argumente.
-\end{enumerate}
+\subsubsection{Konstrukcija}
+
+Obradom proširenog oblika apstraktnog sintaksnog stabla nastaje medju reprezentacija visokog nivoa.
+Proces obrade se naziva snižavanje (\verb|lowering|). Neke sintaksne forme bivaju pojednostavljene.
+Zagrade se uklanjaju jer struktura stabla eksplicitno odredjuje redosled operacija. \verb|For| petlje 
+se konvertuju u \verb|while(let)| petlje \ref{lst:hir_iter}. Izraz \verb|if let| se prevodi 
+u \verb|match| izraz. Izraz \verb|impl| u parametrima funkcije se konvertuje u generički argument.
+Pojednostavljenje je način da se zaobidju granični slučajevi i smanji količina koda koja je potrebna 
+da se izvorni kod analizira.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -1115,23 +1118,46 @@ Tokom procesa snižavanja, neke forme izražavanja bivaju pojednostavljene (\ver
 for elem in vec {
     process(elem);
 }
-
 // Posle
 let mut iterator = vec.into_iter();
 while let Some(elem) = iterator.next() {
     process(elem);
 }
 \end{minted}
-\caption{"for" petlja pre i posle pojednostavljenja}
+\caption{"for" petlja pre i nakon pojednostavljenja}
 \label{lst:hir_iter}
 \end{listing}
 
-HIR prikazuje samo trenutno stanje \verb|Crate|-a.
-Samim time sadrži samo funkcije drugih modula koje su implicitno ili eskplicitno korišćene 
-od strane glavnog modula, sve ostalo će biti ignorisano.
+\verb|Crate| je ponovo čvor najvišeg nova ali za razliku \verb|Crate|-a apstraktnog sintaksnog stabla koji sadrži
+samo podatke o korenskom modulu, \verb|Crate| visoke medju reprezentacije skladišti sadržaj celokupnog paketa.
+Izvorni kod koji se ne koristi niti implicitno niti ekplicitno nije postojan unutar ovog pogleda. Značaj 
+ove osobine se najviše ispoljava prilikom upotrebe eksternih biblioteka, gde je uobičajno koristiti samo 
+deo funkcionalnosti.
 
-Glavni čvor HIR-a se isto kao i kod AST-a naziva \verb|Crate| ali sadrži drugačije podatke,
-veliki broj mapa koje služe da omoguće lakši pristup sadržaju.
+\subsubsection{Sitem upita}
+
+\verb|HIR| je najkorišćeniji oblik izvornog koda u \verb|rustc| \verb|frontend|-u. Takodje je prvi oblik koji 
+koristi sistem upita (\verb|query|) i od izuzetne je važnosti prilikom inkrementalnog kompajliranja.
+Iz perspektive kompajlera znanje u vezi \verb|Crate|-a je baza podataka, dok su upiti način na koji 
+se dobavljaju podaci. Naime ključna razlika izmedju standardne baze podataka i "baze podataka" kompajlera
+to što "baza podataka" kompajlera počinje prazna i puni se kada se upiti izvrše. To znači da upit mora 
+da zna kako da izračuna izlaz u slučaju da rezultat ne postoji u "bazi podataka". "Baza podataka" kompajlera 
+se naziva kontekst upita.
+
+Upit se identifikuje pomoću imena. Ključ specificira koji podatak treba da se dobavi i taj podatak 
+mora da poseduje povratni tip. Provajder je funkcija koja specificira kako se računa rezultat ukoliko nije 
+prethodno izračunat. Esencijalno, upit je funkcija koja mapira ključ na rezultat. 
+Povratne vrednosti upita se keširaju. Povratna vrednost bilo kojeg suksesivnog upita sa istim parametarima rezultovaće 
+kopiji već izračunate vrednosti unutar keša. Ovakva tehnika keširanja rezultata se naziva memoizacija.
+Keširanje je neophodno da bi sistem upita bio efikasan. Bez njega iste kalkulacije bi se ponavljale proizvoljan broj puta.
+
+Da bi ovaj sistem funkcionisao na prethodno opisan način uvode se pojedina pravila. Ključ i rezultat 
+moraju biti nepromenljive vrednosti. Provajder mora biti deterministička funkcija, tj. upit za isti ključ
+uvek vraća istu vrednost. Jedini parametri upita jesu ključ i konstekst kompajliranja (baza podataka).
+Memoizacija je jedan od glavnih razloga za ova pravila. Ukoliko bi provajder mogao da vrati nedeterministički rezultat,
+tačnost keširanjog rezultata ne bi mogla biti zagarantovana.
+
+
 
 HIR poseduje proširen spektar identifikatora:
 \begin{enumerate}
