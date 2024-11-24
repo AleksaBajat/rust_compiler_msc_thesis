@@ -1,10 +1,29 @@
-\subsection{Tipizirana medju reprezentacija visokog nivoa - THIR (Typed HIR)}
+\subsection{Tipizirana medjureprezentacija visokog nivoa - THIR (Typed HIR)}
 
-Tipizirana medju reprezentacija HIR je posredna reprezentacija izvornog koda koja se generiše nakon provere tipova, jer je potrebno
-da su tipovi unutar celog stabla popunjeni. THIR sadrži samo tela (obično tela funkcija) tj. izvršni kod.
-Posledica ovoga jeste nedostatak reprezentacija struktura i osobina. 
+Tipizirana medjureprezentacija visokog nivoa je medjureprezentacija izvornog koda koja nastaje dopunom stabla tipovima.
+Za razliku od \verb|HIR| medjureprezentacije, \verb|THIR| sadrži samo tela tj. izvršni kod. To znači da \verb|THIR| 
+ne sadrži reprezentaciju stavki kao što su strukture (\verb|struct|) i osobine (\verb|traits|). Svako telo u ovoj reprezentaciji
+se čuva priveremeno u memoriji i odbačeno čim više nije potrebno. Ovo je bitna distinkcija u donosu na \verb|HIR| gde se reprezentacija 
+čuva tokom celokupnog procesa kompilacije. Dodatno, automatska referenciranja i dereferenciranja su eksplicitna, pozivi metoda i 
+preklopljeni operatori su pretvoreni u obične pozive funkcija. Uništenje opsega je u ovoj reprezentaciji eksplicitno.
+Izrazi, iskazi i klauzule \verb|match| odredbe se čuvaju posebno.
+
+\subsubsection{Bezbednost}
+
+Tipizirana medjureprezentacija ima značajnu ulogu u proveri bezbednosti koda. Provere bezbednosti se nalaze u modulu \verb|check_unsafety|.
+Algoritam prolazi kroz telo funkcije i sve njene anonimne funkcije prateći da li je nebezbednom \verb|unsafe| kontekstu.
+Ukoliko se nebezbedan kod poziva van nebezbednog (\verb|unsafe|) bloka greška će biti prikazana. Algoirtam takodje vodi računa da li 
+postoji nebezbedan blok u kome se ne koristi nebezbedan kod. Ako postoji ovakav blok kompajler će prikazati upozorenje (\verb|lint|).
+
+Dodatak \ref{lst:safety_check} prikazuje isečak glavne funkcije koja je odgovorna za opseg bezbednosti. 
+Na osnovu \verb|LocalDefId| dobavlja se telo u \verb|THIR| medjureprezentaciji. Potom se na osnovu istog 
+identifikatora evaluira \verb|HirId| uz pomoć kojeg se vrši upit nad \verb|HIR|-om čime se otkriva početni kontekst bezbednosti.
+Struktura \verb|UnsafeVisitor| koristi \verb|THIR| telo, na osnovu kog sprovodi prethodno objašnjen algoritam. Može se primetiti 
+da se ovde incijalizuje vektor upozorenja koja se prikazuju ukoliko se nebezbedan kod ne koristi u nebezbednom kontekstu.
+
+\subsubsection{Provera iscrpnosti}
 Rust ima odliku da ukoliko se koristi neki vid provere šablona (\verb|pattern matching|) svaki tip unutar 
-šablona mora biti pokriven \ref{lst:pattern_matching}. Proveru da li je svaki tip obradjen izvršava THIR.
+šablona mora biti pokriven \ref{lst:pattern_matching}. Proveru da li je svaki tip obradjen izvršava THIR. 
 
 \begin{listing}[H]
 \begin{minted}{rust}

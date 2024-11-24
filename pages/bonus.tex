@@ -78,3 +78,47 @@ true }
 \label{lst:bonus_try_mark_green}
 \end{listing}
 \end{figure}
+
+\section{Dodatak 3}
+
+\begin{listing}[H]
+\begin{minted}{rust}
+let Ok((thir, expr)) = tcx.thir_body(def) else { return };
+// Runs all other queries that depend on THIR.
+tcx.ensure_with_value().mir_built(def);
+let thir = &thir.steal();
+// If `thir` is empty, a type error occurred, skip this body.
+if thir.exprs.is_empty() {
+    return;
+}
+
+let hir_id = tcx.local_def_id_to_hir_id(def);
+let safety_context = tcx.hir().fn_sig_by_hir_id(hir_id)
+.map_or(SafetyContext::Safe, |fn_sig| {
+    if fn_sig.header.safety == hir::Safety::Unsafe {
+        SafetyContext::UnsafeFn
+    } else {
+        SafetyContext::Safe
+    }
+});
+let body_target_features = &tcx.body_codegen_attrs(def.to_def_id()).target_features;
+let mut warnings = Vec::new();
+let mut visitor = UnsafetyVisitor {
+    tcx, thir, .  .  ., warnings: &mut warnings,
+    suggest_unsafe_block: true,
+};
+visitor.visit_expr(&thir[expr]);
+
+warnings.sort_by_key(|w| w.block_span);
+for UnusedUnsafeWarning { hir_id, block_span, enclosing_unsafe } in warnings {
+    let block_span = tcx.sess.source_map().guess_head_span(block_span);
+    tcx.emit_node_span_lint(
+        UNUSED_UNSAFE,
+        hir_id,
+        block_span,
+        UnusedUnsafe { span: block_span, enclosing: enclosing_unsafe },
+    );}
+\end{minted}
+\caption{Provera bezbednosti}
+\label{lst:safety_check}
+\end{listing}
