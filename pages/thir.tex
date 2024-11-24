@@ -21,9 +21,14 @@ identifikatora evaluira \verb|HirId| uz pomoć kojeg se vrši upit nad \verb|HIR
 Struktura \verb|UnsafeVisitor| koristi \verb|THIR| telo, na osnovu kog sprovodi prethodno objašnjen algoritam. Može se primetiti 
 da se ovde incijalizuje vektor upozorenja koja se prikazuju ukoliko se nebezbedan kod ne koristi u nebezbednom kontekstu.
 
-\subsubsection{Provera iscrpnosti}
-Rust ima odliku da ukoliko se koristi neki vid provere šablona (\verb|pattern matching|) svaki tip unutar 
-šablona mora biti pokriven \ref{lst:pattern_matching}. Proveru da li je svaki tip obradjen izvršava THIR. 
+\subsubsection{Provera šablona}
+Rust jezik poseduje karakteristiku da ukoliko se koristi provera šablona (\verb|pattern matching|), svaka moguća 
+varijacija šablona mora biti obradjena (ima odgovarajuću logiku) tj. provera štablona je iscrpna \ref{lst:pattern_matching}.
+Proveru da li je iscrpnost zadovoljena izvršava \verb|THIR|. U provere šablona spadaju izrazi \verb|match|, \verb|if let|,
+\verb|let else|, \verb|let|, pa čak i argumenti funkcija. Pored iscrpnosti, proverava se i korisnost šablona. Korisnost odgovara na pitanje 
+da li je neko grananje redudantno. Ovo je vredno korisniku jezika jer skreće pažnju da je neki segment izvornog koda nedostižan. 
+
+
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -62,4 +67,4 @@ Pojednostavljenje čini THIR podobnim za proveru nebezbednog koda jer fundamenta
 nebezbedni pozivi metoda i nebezbedni pozivi funkcija imaju identičnu reprezentaciju. Ova provera 
 iskazuje grešku ako je nebezbedna operacija korišćena van \verb|unsafe| opsega.
 
-\todo{THIR je kratak sam po sebi ali moguće je detaljnije obraditi pattern matching}
+\subsubsection{Kreiranje srednje medjureprezentacije - MIR}
