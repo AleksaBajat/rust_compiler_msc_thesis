@@ -1,0 +1,80 @@
+\section{Dodatak 1}
+
+\begin{listing}[H]
+\begin{minted}{rust}
+#[proc_macro_attribute]
+pub fn expand_body(_attr: TokenStream, _item: TokenStream) -> TokenStream {
+    let fun = format!("fn missing_body() 
+    {{ println!(\"I'm not missing body anymore.\"); }}");
+
+    let stream: TokenStream = fun.parse().unwrap();
+
+    stream
+}
+
+#[expand_body]
+fn missing_body();
+
+fn main() {
+    missing_body();
+}
+\end{minted}
+\caption{Dodavanje tela funkcije uz pomoć makroa}
+\label{lst:bonus_body_expand}
+\end{listing}
+
+
+
+\section{Dodatak 2}
+\begin{figure}[H]
+\begin{listing}[H]
+\begin{minted}{rust}
+fn try_mark_green(tcx, current_node) -> bool {
+// Fetch the inputs to `current_node`, i.e. get the nodes that the direct
+// edges from `node` lead to.
+let dependencies = tcx.dep_graph.get_dependencies_of(current_node);
+// Now check all the inputs for changes
+for dependency in dependencies {
+match tcx.dep_graph.get_node_color(dependency) {
+Green => {
+// This input has already been checked before and it has not
+// changed; so we can go on to check the next one
+}
+Red => {
+// We found an input that has changed. We cannot mark
+// `current_node` as green without re-running the corresponding query.
+    return false
+}
+Unknown => {
+// This is the first time we look at this node. Let's try
+// to mark it green by calling try_mark_green() recursively.
+    if try_mark_green(tcx, dependency) {
+// We successfully marked the input as green, on to the next.
+    } else {
+// We could *not* mark the input as green. This means we
+// don't know if its value has changed. In order to find
+// out, we re-run the corresponding query now!
+        tcx.run_query_for(dependency);
+// Fetch and check the node color again. Running the query
+// has forced it to either red (if it yielded a different
+// result than we have in the cache) or green (if it
+// yielded the same result).
+        match tcx.dep_graph.get_node_color(dependency) {
+            Red => {
+// The input turned out to be red, so we cannot mark `current_node` as green.
+                return false
+            }
+            Green => {
+// Re-running the query paid off! The result is the same as before, 
+// so this particular input does not invalidate `current_node`.
+            }
+            Unknown => {
+// There is no way a node has no color after re-running the query.
+                panic!("unreachable") } } } } } }
+tcx.dep_graph.mark_green(current_node);
+true }
+\end{minted}
+\caption{Implementacija algoritma "try-mark-green"}
+\label{lst:bonus_try_mark_green}
+\end{listing}
+\end{figure}

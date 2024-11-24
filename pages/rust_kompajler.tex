@@ -1,0 +1,263 @@
+\section{Rust kompajler}
+
+Rust kompajler u svakom trenutku poseduje tri glavne verzije skupa alata (\verb|toolchain|): stabilna, beta i noćna (\verb|nightly|) verzija.
+Stabilna verzija kompajlera je bezbedna i preporučena za produkcionu upotrebu. Beta verzija sadrži funkcionalnosti
+koje se usvajaju u narednoj stabilnoj verziji. Noćna verzija je verzija kompajlera koja se 
+proizvodi svaku noć, sa svim najnovijim netestiranim promenama. Kapija funkcionalnosti je mehanizam bezbednosti
+koji onemogućava da eksperimentalne (nestabilne) funkcionalnosti slučajno završe u produkciji. 
+Kapija je definisana na osnovu stanja kapije, naziva funkcionalnosti, verzije, broja zahteva za povlačenjem
+(\verb|pull| \verb|request|) i opcionog komentara.
+Stanje kapije funkcionalnosti može biti nestabilno, obrisano ili prihvaćeno i nekompletirano. Nekompletirano 
+stanje unutar kapije daje do znanja korisniku noćne verzije ili drugim saradnicima da je nestabilna funkcionalnost 
+u razvoju.  Nestabilne kapije onemogućavaju da stabilna i beta verzija kompajlera kompajliraju 
+dati segment koda (ignoriše se).  Samim time razvoj je direktno 
+usmeren ka noćnoj verziji koja je pod nadzorom celokupnog Rust tima. Obrisane kapije se ne brišu fizički iz koda,
+već se status kapije promeni u obrisan uz komentar sa razlogom. Na ovaj način se čuva istorija pokušanih 
+funkcionalnosti sa razlozima koji su uzrokovali brisanje. U slučaju da se sličan zahtev ponovo javi, retrospektiva
+služi kao moćan alat koji će idealno upozoriti saradnike i preusmeravati ih na bolji pravac.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+    (incomplete, pub_restricted, "CURRENT_RUSTC_VERSION", Some(32409)),
+    (unstable, pub_restricted, "CURRENT_RUSTC_VERSION", Some(32409))
+    (accepted, pub_restricted, "CURRENT_RUSTC_VERSION", Some(32409)),
+    (removed, pub_restricted, "CURRENT_RUSTC_VERSION", 
+    Some(32409), Some("Removed because.."))
+\end{minted}
+\caption{Kapija funkcionalnosti}
+\label{lst:rustup_set}
+\end{listing}
+
+Svaka funkcionalnost prolazi kroz dugačak proces provera pre nego 
+što se usvoji. Ukoliko funkcionalnost zahteva promene koje nisu reorganizacija, refaktorisanje, dokumentovanje
+i slično, kreira se zahtev za komentare (\verb|RFC|) koji detaljno objašnjava važnost funkcionalnosti i 
+pregled implementacionih detalja sa visine. U suprotnom ovaj segment se preskače. Stejkholderi kao što je Rust kompajler tim, ali i sama Rust zajednica 
+ima pravo da vaga o potencijalnim implikacijama koje funkcionalnost donosi. Odobravanje zahteva znači početak 
+razvoja ali ne garantuje usvajanje. Ukoliko je funkcionalnost razvijena, pokrivena testovima, 
+bez značajnih primedbi, bilo koji saradnik može pokrenuti zahtev za stabilizaciju. Zahtev je konstituiran iz 
+četiri dela: dokumentacionog \verb|pull| \verb|request|-a, stabilizacionog izveštaja, 
+perioda finalnog komentara i stabilizacionog \verb|pull| \verb|request|-a.
+
+Dokumentacija funkcionalnosti koja se stabilizuje se briše iz nestabilne knjige \cite{unstable} i ažurira se 
+dokumentacija namenjena korisnicima jezika. Korisnici povlače informacije iz različitih delova dokumentacije,
+naime najbitnije je detljno ažurirati knjigu referenci \cite{rust-reference} koja opisuje svaku stabilnu 
+karakteristiku jezika. Nestablina knjiga vodi relativno ažurnu evidenciju o nestabilnim funkcionalnostima.
+Svaka nestabilna funkcionalnost pripada samo jednoj od tri potkategorije: zastavica kompajlera, funkcionalnost jezika ili
+funkcionalnost standardne biblioteke. Stabilizacioni izveštaj sadrži primere koji prikazuju novu karakteristiku 
+u realnom scenariju, linkove ka dokumentaciji, kao i objašnjenje podržano testovima koji opisuju ponašanje funkcionalnosti u 
+graničnim slučajevima. Saradnik koji prati tok razvoja funkcionalnosti, ukoliko se slaže sa procesom 
+stabilizacije, započinje period finalnog komentara. Ostatak tima pregleda predlog i ukoliko je koncenzus
+pozitivan finalni zahtev za povlačenjem se kreira. Cilj je da se promeni status zastavice u prihvaćeno
+stanje kao i brisanje makroa \verb|gate_feature_post!| koji pokreće grešku ukoliko se funkcionalnost koristi van noćne verzije kompajlera.
+Ukoliko je sve zadovoljeno, funkcionalnost postaje bliža krajnjim korisnicima za testiranje u beta verziji, dok
+neminovno ne predje u stabilnu verziju u narednoj stabilnoj distribuciji. 
+
+\newpage
+
+Originalna ideja iza nestabilnih funkcionalnosti kompajlera, pored očiglednih bezbednosnih pogodnosti, 
+jeste da se pruži pristup najnovijim karakteristikama zarad testiranja i evaluacije korisnosti.
+Uprkos tome 2022. godine 12\%  paketa u Rust ekosistemu se direktno oslanjalo na nestabilne funkcionalnosti, a 
+44\% paketa je indirektno zavisilo od nestabilnih funkcionalnosti da bi se kompajliralo \cite{unstable-flags}. Iako 
+statusi kapija semantički omogućavaju brisanje kapije bez grubog brisanja, kompajler konstantno menja arhitekturu, čime ujedno 
+rešava probleme zbog kojih je postojanje nestabilnih funkcionalnosti bilo potrebno. Naime brisanje kapije 
+u bilo kom obliku označava da u sledećoj noćnoj verziji, program ili biblioteka zavisna od nestabilne funkcionalnosti
+neće moći da se kompajlira. To takodje ne garantuje da se nestabilna funkcionalnosti neće vratiti već u sledećoj
+verziji i obrnuto. Iako se od strane zajednice pruža trud da se nestabilne funkcionalnosti prate, ovakav vid 
+razvoja bi se pokazao neefikasan jer svaki budući razvoj potencijalno zahteva obazrivost na nestabilne 
+biblioteke što nije cilj kompajlera. Procentualna zavisnost prema nestabilnim funkcionalnostima je visoka ali 
+analiza nije sprovedena da se izračuna procenat masovno korišćenih paketa sa direktnim ili tranzitivnim
+zavisnostima, kao i procenat nestabilnih funkcionalnosti na kojima se ovakvi paketi zasnivaju.
+
+Skup alata (\verb|toolchain|) je kompletna instalacija Rust kompajlera (\verb|rustc|) i srodnih alata kao što 
+je \verb|Cargo|. Skup alata se instalira i ažurira uz pomoć programa komandne linije \verb|rustup| \ref{lst:rustup_set}. 
+
+\begin{listing}[H]
+\begin{minted}{text}
+    rustup toolchain install [version]
+\end{minted}
+\caption{Instaliranje novog skupa alata}
+\label{lst:rustup_set}
+\end{listing}
+
+Program \verb|rustup| automatski odredjuje koji skup alata će se koristiti prilikom pokretanja kompajlera. 
+Postoji više načina da se kontroliše koji skup alata se primenjuje za neko proizvoljno okruženje.
+Ako prvi argument \verb|rustc| kompajlera ili \verb|Cargo| menadžera paketa počinje sa "+" (bez navodnika) 
+onda naznačava ime skupa alata koji je poželjan da se koristi \ref{lst:toolchain_cli}. 
+
+\begin{listing}[H]
+\begin{minted}{text}
+    cargo +beta run 
+    rustc +beta main.rs
+\end{minted}
+\caption{Konfigurisanje skupa alata kroz argumente komandne linije}
+\label{lst:toolchain_cli}
+\end{listing}
+
+Ukoliko ne postoji prikazuje se poruka da skup 
+alata nije instaliran ili da ga je nemoguće dobaviti. Promenljiva okruženja \verb|RUSTUP_TOOLCHAIN| specificira 
+podrazumevani skup alata. Skup alata je moguće primeniti na nivou direktorijuma upotrebom \verb|rustup| \verb|override|
+komande \ref{lst:toolchain_dir}. 
+
+\begin{listing}[H]
+\begin{minted}{text}
+    rustup override set beta 
+\end{minted}
+\caption{Konfigurisanje skupa alata na nivou direktorijuma}
+\label{lst:toolchain_dir}
+\end{listing}
+
+Alternativno kreiranjem konfiguracionog fajla \verb|rust-toolchain.toml| u korenskom 
+direktorijumu projekta moguće je specificirati skup alata za taj projekat \ref{lst:toolchain_cfg}.
+
+\begin{listing}[H]
+\begin{minted}{toml}
+[toolchain]
+channel = "nightly-2020-07-10"
+components = [ "rustfmt", "rustc-dev" ]
+targets = [ "wasm32-unknown-unknown", "thumbv2-none-eabi" ]
+profile = "minimal"
+\end{minted}
+\caption{Konfigurisanje skupa alata uz pomoć konfiguracionog fajla}
+\label{lst:toolchain_cfg}
+\end{listing}
+
+Ovaj način je najoptimalniji u produkcionim projektima ukoliko se koristi skup alata koji 
+nije podrazumevan budući da je konfiguracioni fajl daleko opsežniji i obuhvata mete kompajliranja i 
+potrebne komponente. Mete kompajliranja su distribucije za koje se kompaljira \verb|Rust| program.
+Svaki skup alata sadrži komponente od kojih su neke opcione a neke neophodne. Jedna od najkorišćenijih 
+opcionih komponenti jeste \verb|clippy| koji služi da predupredi što više čestih grešaka uz pomoć 
+700 novih upozorenja. 
+
+
+Za prikaz dostupnih lokalnih verzija, kao i trenutna aktivna verzija u direktorijumu koristi se \verb|rustup|
+\verb|show| komanda \ref{lst:rustup_show}.
+
+\begin{listing}[H]
+\begin{minted}{text}
+    rustup show
+        installed toolchains
+        --------------------
+        stable-x86_64-unknown-linux-gnu (default)
+        nightly-x86_64-unknown-linux-gnu
+        active toolchain
+        ----------------
+        nightly-x86_64-unknown-linux-gnu (directory 
+        override for '/home/abajat/Documents/projects/master')
+        rustc 1.83.0-nightly (12b26c13f 2024-09-07)
+\end{minted}
+\caption{Prikaz izlaza "rustup show" komande}
+\label{lst:rustup_show}
+\end{listing}
+
+Ključna osobina \verb|Rust| jezika jeste stabilnost bez stagnacije. Jednom kada se nova 
+funkcionalnost jezika objavi u stabilnoj verziji, kontributori će održavati 
+tu funkcionalnost u svim narednim verzijama \cite{editions}.
+Rane verzije Rust-a nisu posedovale \verb|async| i \verb|await| ključne reči.
+Kada bi Rust bez mera predostrožnosti uveo nove ključne reči, neka količina koda bi bila pokvarena.
+
+\begin{listing}[h]
+\begin{minted}{rust}
+    // validan rust kod 
+    // ali nije validan ako je edicija posle 2018 uključena
+    let async = 5; 
+\end{minted}
+\caption{Nekompatibinost prilikom promene edicije}
+\label{lst:edition}
+\end{listing}
+
+
+Rust koristi edicije da bi rešio ovaj problem. Ako postoje promene koje su unazad 
+nekompatibilne onda postaju sastav sledeće edicije. Edicija se mora eksplicitno navesti 
+u \verb|Cargo.toml| konfiguracionom fajlu da bi se funkcionalnosti uključile \ref{lst:edition_toml}. Kreiranje novog projekta uz 
+pomoć menadžera paketa \verb|Cargo| automatski bira poslednju dostupnu verziju.
+\verb|Crate|-ovi različitih edicija su kompatibilne izmedju sebe. Kompatibilnost omogućuje 
+karakteristika Rust kompajlera da prilikom kompajliranja prevodi svaki \verb|Crate| na istu medju reprezentaciju 
+koda bez obzira na ediciju. Omogućavanje ovakvog nivoa kompatibilnosti limitira nivo promene 
+koji se može očekivati u ediciji. Migracija na novu verziju \verb|Rust|-a je obično laka i pretežno automatizovana
+i sprovodi se kroz \verb|Cargo|. Automatske migracije nisu savršene i moguće je da je potreban nivo manuelnog 
+truda da bi se u potpunosti završio proces.
+
+\begin{listing}[h]
+\begin{minted}{toml}
+[package]
+name = "some_crate"
+version = "0.1.0"
+edition = "2021"
+
+\end{minted}
+\caption{Eksplicitno navodjenje edicije u Cargo.toml fajlu}
+\label{lst:edition_toml}
+\end{listing}
+
+\newpage
+
+
+Podrazumevano ponašanje \verb|rustc| kompajlera moguće je promeniti upotrebom promenljivih okruženja 
+i zastavica funkcionalnosti (\verb|feature| \verb|flags|). Kompletan spisak omogućenih zastavica funkcionalnosti 
+za korišćeni skup alata se može prikazati upotrebom \verb|--help| opcije \verb|rustc| kompajlera \ref{lst:rustc_flags}.
+
+\begin{listing}[H]
+\begin{minted}{bash}
+    rustc --help -v 
+\end{minted}
+\caption{Prikaz svih omogućenih zastavica funkcionalnosti}
+\label{lst:rustc_flags}
+\end{listing}
+
+Glavni podskup zastavica funkcionalnosti se bavi generisanjem koda. Navode se korišćenjem \verb|-C| prefiksa. 
+Budući da generisanje koda izvršava 
+LLVM set alata, dostupan je širok dijapazon opcija. Nivoi optimizacije koda, kao i ciljani procesor za koji 
+se kod kompajlira su neka od bitnijih podešavanja. Zastavica \verb|emit| je izuzetno bitna jer omogućava izbor 
+dodatnih izlaznih artefakta koji se traže od kompajlera. Bitniji artefakti su LLVM bitkod, LLVM medju 
+reprezentacija i asemblerski kod.
+
+\begin{listing}[H]
+\begin{minted}{bash}
+    cargo rustc -- --emit=llvm-bc
+    cargo rustc -- --emit=llvm-ir
+    cargo rustc -- --emit=asm
+\end{minted}
+\caption{Generisanje dodatnih izlaznih artefakta}
+\label{lst:emit_flag}
+\end{listing}
+
+
+\verb|Rust| se odlikuje sa dva načina kompilacije, kompletna 
+i inkrementalna. Kompletna kompilacija je podrazumevana i \verb|Crate| se kompajlira od početka svaki put.
+Inkrementalna kompilacija se uključuje uz pomoć zastavica funkcionalnosti gde se prilikom kompajliranja 
+beleže izlazi koji mogu da se iskoriste u narednom procesu kompajliranja \ref{lst:incremental_flag}. Inkrementalna kompilacija je 
+efektivna u slučaju da je \verb|Crate| veoma velik i smanjuje vreme sekvencijalnih kompilacija. Prilikom ovog 
+vida kompilacije čuva se značajno više podataka tj. dodatne performanse se dobijaju na uštrb memorije na disku.
+Samim time ovo nije efektivan metod kompajliranja u \verb|CI/CD| okruženjima jer agent koji vrši kompajliranje
+obično nije deterministički. Keširanje izlaza inkrementalne kompilacije i korišćenje istog u nesekvncijalnoj 
+kompilaciji može biti sporije nego kompletno kompajliranje usled bačenog procesorskog vremena na proveru 
+izlaza koji se ne mogu ponovo iskoristiti.
+
+\begin{listing}[H]
+\begin{minted}{text}
+    cargo rustc -- -C incremental=true 
+\end{minted}
+\caption{Inkrementalna kompilacija Crate-a}
+\label{lst:incremental_flag}
+\end{listing}
+
+
+Noćna verzija \verb|Rust| kompajlera se odlikuje proširenim skupom zastavica funkcionalnosti koje se zovu 
+nestabline zastavice funkcionalnosti. Navode se korišćenjem \verb|-Z| prefiksa. U ovom skupu se nalaze 
+zastavice koje su izuzetno korisne prilikom razvoja \verb|rustc|-a ali i zastavice koje se razvijaju
+i koje će potencijalno biti deo nove verzije \verb|rustc|-a. Jedna od najbitnijih zastavica u razvoju 
+jeste \verb|unpretty| koja može da prikaže izvorni kod u nekoj medju reprezentaciji kao što su
+apstraktno sintaksno stablo, visoka medju reprezentacija i srednja medju reprezetacija \ref{lst:intermediate_representation}.
+
+\begin{listing}[H]
+\begin{minted}{bash}
+    # Apstraktno sintaksno stablo 
+    cargo +nightly rustc -- -Z unpretty=ast-tree
+    # Visoka medju reprezentacija
+    cargo +nightly rustc -- -Z unpretty=hir
+    # Srednja medju reprezentacija
+    cargo +nightly rustc -- -Z unpretty=mir
+\end{minted}
+\caption{Prikaz medju reprezentacija izvornog koda}
+\label{lst:intermediate_representation}
+\end{listing}

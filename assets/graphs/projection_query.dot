@@ -1,0 +1,38 @@
+digraph projection {
+    node[shape=record]
+    rankdir = LR
+
+    mono_query[
+        label = "Glavni upit (eval_always)"
+    ]
+
+    proj_1[
+        label = "Projekcioni upit 1"
+    ]
+
+    proj_2[
+        label = "Projekcioni upit 2"
+    ]
+
+    proj_3[
+        label = "Projekcioni upit 3"
+    ]
+
+    zavisnost_1[
+        label = "Zavisnost 1"
+    ]
+
+    zavisnost_2[
+        label = "Zavisnost 2"
+    ]
+
+    zavisnost_3[
+        label = "Zavisnost 3"
+    ]
+
+
+    zavisnost_1 -> proj_1
+    zavisnost_2 -> proj_2
+    zavisnost_3 -> proj_3
+    proj_1, proj_2, proj_3 -> mono_query
+}

@@ -1,0 +1,88 @@
+\subsection{Posredna Reprezentacija Srednjeg Nivoa - MIR (Mid-Level Intermediate Representation)}
+
+Prvobitno koncept \verb|MIR|-a nije postojao. HIR se transformisao u LLVM reprezentaciju gde 
+vršila optimizacija. Glavni povod za uvod reprezentacije srednjeg nivoa 
+jeste inkrementalna kompilacija i MIR je struktuiran tako da ga je lako sačuvati i učitati, iako su se delovi
+koda promenili tokom vremena.
+
+U HIR-u optimizacija \verb|for| petlje je svedena na \verb|while(let)| u MIR-u se prevodi na \verb|loop match| 
+primitivu \ref{lst:mir_for_1}.  Pozivi metoda su prevedeni u pozive funkcija još u THIR-u.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+let mut iterator = IntoIterator::into_iter(vec);
+loop {
+    match Iterator::next(&mut iterator){
+        Some(elem) => process(elem),
+        None => break,
+    }
+}
+\end{minted}
+\caption{"while let" posle pojednostavljenja}
+\label{lst:mir_for_1}
+\end{listing}
+
+Reprezentacija srednjeg nivoa dozvoljava za još jedan vid optimizacije na nivou frontenda pojednostavljivanjem
+sintakse na primitive koje nisu dostupne u regularnom jeziku.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+let mut iterator = IntoIterator::into_iter(vec);
+
+loop:
+    match Iterator::next(&mut iterator) {
+        Some(elem) => { process(elem); goto loop; }
+        None => { goto break; }
+    }
+
+break:
+\end{minted}
+\caption{"while let" posle pojednostavljenja}
+\label{lst:mir_for_2}
+\end{listing}
+
+Izraz \verb|goto| je u inženjerskoj zajednici gledan sa visine jer kontrola toka nakon odredjene kompleksnosti
+postaje nerazumljiva. Rust iz istog razloga ne dozvoljava upotrebu ove ključne reči, ali u MIR-u svodi 
+petlju na najjednostavniji oblik \ref{lst:mir_for_2}.
+
+\newpage
+U isečku koda \ref{lst:mir_for_2}, jedina kompleksnija sintaktička celina je \verb|match|. U samom jeziku 
+grupisanje provere i pristup podatku je smisleno ali u MIR-u se odvaja na dve celine \ref{lst:mir_for_3}.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+loop:
+    let tmp = Iterator::next(&mut iterator);
+    
+    switch tmp {
+        Some => {
+            let elem = (tmp as Some).0;
+            process(elem);
+            goto loop;
+        }
+        None => {
+            goto break;
+        }
+    }
+    
+break:
+    ....
+\end{minted}
+\caption{"while let" posle pojednostavljenja}
+\label{lst:mir_for_3}
+\end{listing}
+
+Naime ovako sveden kod nikada nije tekstualnom obliku. MIR je graf kontrole toka koji se može predstaviti
+uz pomoć \verb|graphviz|-a \ref{lst:mir_print}. Filter mora biti zadatat prilikom poziva ove komande. 
+Za prikaz celokupnog izlaza koristi se \verb|all| filter, dok ako je neka pojedinačna funkcija od interesovanja
+njeno ime (mnogo češće slučaj).
+
+\begin{listing}[H]
+\begin{minted}{bash}
+cargo rustc -- -Z dump-mir=[filter] -Z dump-mir-graphviz
+\end{minted}
+\caption{Ispis i prikaz MIR-a}
+\label{lst:mir_print}
+\end{listing}
+
+\todo{MIR je opsežan, ne izgleda kao u primerima (umereni nivo obfuskacije). Ovde ima još značajno puno sadržaja koji nije opisan.}

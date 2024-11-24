@@ -1,0 +1,180 @@
+\subsection{Apstraktno Sintaksno Stablo}
+
+Parser jezika Rust uz pomoć toka tokena iz leksera generiše apstraktno sintaksno stablo (AST). 
+Prilikom poziva parsiranja, jedini fajl koji se odmah procesira jeste glavni \verb|main| fajl, potpuno stablo
+nastaje putem ekspanzije i rezolucije imena.
+Algoritam \verb|recursive-descent| se koristi tokom procesa parsiranja. Ovo je jedna od najjednostavnijih
+tehnika parsiranja koja se koristi u praksi. Ovakvi parseri se takodje nazivaju \verb|top-down| parseri 
+jer konstruišu stablo od gore ka dole \cite{parsing}. 
+
+Parser koristi prethodno pomenuti tok tokena da bi kreirao kursor nad stablom tokena \verb|TokenTreeCursor|.
+\verb|TokenStream| poseduje implementaciju \verb|into_tree| koji transformiše tip dobijen iz leksera
+u tip pogodan parseru.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+pub fn into_trees(self) -> TokenTreeCursor {
+    TokenTreeCursor::new(self)
+}
+
+impl TokenTreeCursor {
+    fn new(stream: TokenStream) -> Self {
+        TokenTreeCursor { stream, index: 0 }
+    }
+    ...
+}
+\end{minted}
+\caption{Konverzija iz "TokenStream" u "TokenTreeCursor"}
+\end{listing}
+Jednostavnije je iterirati kroz stabla tokena sekvencijalno u odnosu na strukturu koja liči na kanape.
+
+Za razliku od leksera, parser poseduje konstrukte koji su dosta složeniji od jednog tokena, kao što su 
+strukture, enumeracije i slično (reč-rečenica poredjenje). Izvorni čvor \verb|AST|-a je \verb|Crate|.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+#[derive(Clone, Encodable, Decodable, Debug)]
+pub struct Crate {
+    pub attrs: AttrVec,
+    pub items: ThinVec<P<Item>>,
+    pub spans: ModSpans,
+    pub id: NodeId,
+    pub is_placeholder: bool,
+}
+\end{minted}
+\caption{Definicija "Crate" strukture}
+\end{listing}
+
+\newpage
+
+Najbitnija polja su atributi (\verb|attrs|) i stavke (\verb|items|). Atributi mogu biti spoljašnji ili unutrašnji.
+Koriste se da bi korisnik pružio dodatne instrukcije kompajleru. 
+Dodatne instrukcije mogu biti trivijalne poput dozvoljavanja
+nekorišćenog koda, ali mogu biti i kompleksnije u vidu implementacije osobina 
+(\verb|trait|). Osobina je funkcionalnost veoma slična interfejsu u drugim jezicima. 
+
+
+
+
+Stavke su grupacije tokena iz leksera koje tako grupisane imaju semantiku. Iz perspektive koda 
+veoma se malo razlikuje od samog \verb|Crate|-a. Svaka stavka poseduje identifikator \verb|NodeId| 
+koji predstavlja sekvencijalni broj stavke unutar \verb|Crate|-a. Ovo znači da ukoliko se usred stabla 
+obriše ili izgeneriše nova stavka, svaki čvor nakon tog dela stabla mora ponovo da izgeneriše svoj redni broj.
+Samim time apstraktno sintaksno stablo nije korisno prilikom inkrementalne kompilacije jer su identifikatori
+volotilni. Svaka stavka takodje sadrži \verb|Span|. Ovo je tip koji odredjuje početnu i krajnju poziciju 
+stavke unutar izvornog koda. U odnosu na vrednost tipa \verb|kind|, stavke mogu ili ne mogu da poseduju atribute. 
+
+\begin{listing}[H]
+\begin{minted}{rust}
+#[derive(Clone, Encodable, Decodable, Debug)]
+pub struct Item<K = ItemKind> {
+    pub attrs: AttrVec,
+    pub id: NodeId,
+    pub span: Span,
+    pub vis: Visibility,
+    pub ident: Ident,
+    pub kind: K,
+    pub tokens: Option<LazyAttrTokenStream>,
+}
+\end{minted}
+\caption{Definicija "Item" strukture}
+\end{listing}
+
+\begin{listing}[H]
+\begin{minted}{rust}
+pub fn parse_crate_mod(&mut self) -> PResult<'a, ast::Crate> {
+    let (attrs, items, spans) = self.parse_mod(&token::Eof)?;
+    Ok(ast::Crate { attrs, items, spans, 
+       id: DUMMY_NODE_ID, is_placeholder: false })
+}
+\end{minted}
+\caption{Ulazna funkcija parsera}
+\end{listing}
+
+
+Rezolucija imena je jedan od delova formiranja apstraktnog sintaksnog stabla.
+U programima se referenciraju funkcije, varijable i tipovi na osnovu imena. Ova imena nisu uvek jedinstvena.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+type a = u32;
+let a: a = 1;
+let b: a = 5; 
+\end{minted}
+\caption{Rezolucija imena}
+\label{lst:resolution}
+\end{listing}
+
+Kako znamo, u izvornom kodu \ref{lst:resolution}, da li je u liniji 3 "a" tip ili vrednost 1?
+Ovakvi konflikti se rešavaju prilikom rezolucije imena. U datom slučaju imena tipova i promenljivih se nalaze 
+u različitim imenskim prostorima (\verb|namespaces|) i zbog toga mogu da koegzistiraju.
+Rezolucija imena se izvodi iz dva faze. Prva faza se dešava za vreme ekspanzije (više o tome u daljem tekstu) 
+gde se obradjuju samo \verb|import|-i. Druga faza se dešava nakon ekspanzije gde se obradjuje celokupno 
+sintaksno stablo počevši od vrha pa na dole. 
+
+Imena su validna u različitim delovima izvornog koda. Da bi se 
+vreme života (\verb|scope|) nekog imena proverilo uvodi se koncept rebara (\verb|rib|). Svaki put kada se 
+set vidljivih imena potencijalno menja novo rebro se gura na stek. Primeri situacija u kojima se dodaje 
+novo rebro:
+\begin{enumerate}
+    \item Očigledna mesta kao što su vitičaste zagrade, funkcije, moduli.
+    \item Prilikom poziva \verb|let| jer se ime može redefinisati (\verb|shadowing|).
+    \item Početak proširenja makroa. 
+\end{enumerate}
+Potraga za imenom se izvodi od najdubljeg rebra (vrh steka) ka najplićem. 
+Redosled je veoma bitan zato što se ovakvom pretragom izbegava greška 
+ukoliko je neko ime redefinisano.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+let a: u32 = 1;
+let a: i32 = -1;
+\end{minted}
+\caption{"Shadowing"}
+\label{lst:shadowing}
+\end{listing}
+
+Jezici kao što je C pored kompajlera sadrže pre-procesor koji prikuplja izvorni kod. 
+Prilikom prikupljanja izvornog koda skraćenice (makroi) se proširuju na izraze programskog jezika. 
+Rust se odlikuje veoma moćnim makroima ali ne poseduje pre-procesor. Transformacija skraćenica se vrši 
+putem ekspanzije.  Ekspanzija je proces tokom kog se dopunjuje apstraktno sintaksno stablo
+proširivnajem makroa i umetanjem modula (\verb|inlining|). Prilikom parsiranja umesto 
+modula i makroa se postavljaju AST fragmenti. Ovi fragmenti su početne tačke algoritma ekspanzije.
+Kreira se red čekanja neproširenih makroa. Jedan po jedan se uzimaju iz reda čekanja, vriši se rezolucija imena,
+proširuju se i integrišu nazad u stablo. U slučaju da se nema napretka (loše napisan kod), vraća se greška.
+
+Pre nego što počne prelazak u sledeći posredni oblik AST stablo se validira. 
+Tokom prolaska se proverava da li je stablo sintaktički validno, bez ikakvih kompleksnih analiza,
+rezolucije imena ili provera tipova. Ovo nije moguće učiniti prilikom parsiranja jer makro atributi 
+omogućavaju odredjene delove netačne sintakse kao što je funkcija bez tela van definicije osobine (\verb|trait|) \ref{lst:validate}.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+#[proc_macro_attribute]
+pub fn expand_body(_attr: TokenStream, _item: TokenStream) -> TokenStream {
+    let fun = format!("fn missing_body() 
+    {{ println!(\"I'm not missing body anymore.\"); }}");
+    let stream: TokenStream = fun.parse().unwrap();
+    stream
+}
+#[expand_body]
+fn missing_body();
+fn main() {
+    missing_body();
+}
+\end{minted}
+\caption{Dodavanje tela funkcije uz pomoć makroa}
+\label{lst:validate}
+\end{listing}
+
+Apstraktno sintaksno stablo pre i posle ekspanzije nekog \verb|Crate|-a se može analizirati pomoću 
+nestabilnih \verb|-Z| zastavica \ref{lst:rustc_ast}.
+
+\begin{listing}[H]
+\begin{minted}{bash}
+cargo rustc -- -Z unpretty=ast
+cargo rustc -- -Z unpretty=ast,expanded
+\end{minted}
+\caption{"Prikaz apstraktnog sintaksnog stabla"}
+\label{lst:rustc_ast}
+\end{listing}

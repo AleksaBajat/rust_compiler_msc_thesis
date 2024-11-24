@@ -1,0 +1,46 @@
+\subsection{Tipizirana medju reprezentacija visokog nivoa - THIR (Typed HIR)}
+
+Tipizirana medju reprezentacija HIR je posredna reprezentacija izvornog koda koja se generiše nakon provere tipova, jer je potrebno
+da su tipovi unutar celog stabla popunjeni. THIR sadrži samo tela (obično tela funkcija) tj. izvršni kod.
+Posledica ovoga jeste nedostatak reprezentacija struktura i osobina. 
+Rust ima odliku da ukoliko se koristi neki vid provere šablona (\verb|pattern matching|) svaki tip unutar 
+šablona mora biti pokriven \ref{lst:pattern_matching}. Proveru da li je svaki tip obradjen izvršava THIR.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+pub enum IpAddrKind {
+    V4,
+    V6,
+}
+
+fn main() {
+    let x = IpAddrKind::V4;
+    match x {
+        IpAddrKind::V4 => println!("Ovo je IPv4 adresa."), 
+        // Pokriven IpAddrKind::V4
+        IpAddrKind::V6 => println!("Ovo je IPv6 adresa.") 
+        // Pokriven IpAddrKind::V6
+        // Da je postojao IpAddrKind::V7 Rust bi zahtevao 
+        // da i ta varijanta bude obradjena.
+    }
+}
+\end{minted}
+\caption{Provera šablona}
+\label{lst:pattern_matching}
+\end{listing}
+
+Za razliku od HIR-a koji je perzistiran tokom celokupnog izvršavanja kompajlera, THIR se odbacuje momenta
+kada više nema upotrebnu vrednost. Pored toga što su svi tipovi čvorova prisutni, THIR se odlukuje dodatnim 
+pojednostavljivanjem koda:
+\begin{enumerate}
+    \item Automatska referenciranja i dereferenciranja su eksplicitna.
+    \item Pozivi metoda i opterećeni operatori su konvertovani u obične pozive funkcija. 
+    \item Obim životnog veka je eksplicitan.
+\end{enumerate}
+% Izrazi, iskazi i \verb|match| ruke se čuvaju zasebno. 
+
+Pojednostavljenje čini THIR podobnim za proveru nebezbednog koda jer fundamentalno poseduje manje opcija, 
+nebezbedni pozivi metoda i nebezbedni pozivi funkcija imaju identičnu reprezentaciju. Ova provera 
+iskazuje grešku ako je nebezbedna operacija korišćena van \verb|unsafe| opsega.
+
+\todo{THIR je kratak sam po sebi ali moguće je detaljnije obraditi pattern matching}
