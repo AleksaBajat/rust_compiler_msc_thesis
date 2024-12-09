@@ -10,7 +10,10 @@ Izrazi, iskazi i klauzule \verb|match| odredbe se čuvaju posebno.
 
 \subsubsection{Bezbednost}
 
-Tipizirana medjureprezentacija ima značajnu ulogu u proveri bezbednosti koda. Provere bezbednosti se nalaze u modulu \verb|check_unsafety|.
+Pojednostavljivanjem izvornog koda sažima se broj različitih načina da se isti kod napiše i smanjuje razdaljinu izmedju 
+koda koji se analizira (AST) i koda koji se izvršava (bitcode).
+Upravo taj manjak instrukcione kompleksnosti čini tipiziranu medjureprezentaciju značajnu u proveri bezbednosti. 
+Provere bezbednosti se nalaze u modulu \verb|check_unsafety|.
 Algoritam prolazi kroz telo funkcije i sve njene anonimne funkcije prateći da li je nebezbednom \verb|unsafe| kontekstu.
 Ukoliko se nebezbedan kod poziva van nebezbednog (\verb|unsafe|) bloka greška će biti prikazana. Algoirtam takodje vodi računa da li 
 postoji nebezbedan blok u kome se ne koristi nebezbedan kod. Ako postoji ovakav blok kompajler će prikazati upozorenje (\verb|lint|).
@@ -24,7 +27,7 @@ da se ovde incijalizuje vektor upozorenja koja se prikazuju ukoliko se nebezbeda
 \subsubsection{Provera šablona}
 Rust jezik poseduje karakteristiku da ukoliko se koristi provera šablona (\verb|pattern matching|), svaka moguća 
 varijacija šablona mora biti obradjena (ima odgovarajuću logiku) tj. provera štablona je iscrpna \ref{lst:pattern_matching}.
-Proveru da li je iscrpnost zadovoljena izvršava \verb|THIR|. U provere šablona spadaju izrazi \verb|match|, \verb|if let|,
+Proveru da li je iscrpnost zadovoljena izvršava \verb|THIR|. U provere šablona spadaju izrazi \verb|match|, \verb|if let|, \verb|while let|,
 \verb|let else|, \verb|let|, pa čak i argumenti funkcija. Pored iscrpnosti, proverava se i korisnost šablona. Korisnost odgovara na pitanje 
 da li je neko grananje redudantno. Ovo je vredno korisniku jezika jer skreće pažnju da je neki segment izvornog koda nedostižan. 
 
@@ -32,18 +35,12 @@ da li je neko grananje redudantno. Ovo je vredno korisniku jezika jer skreće pa
 
 \begin{listing}[H]
 \begin{minted}{rust}
-pub enum IpAddrKind {
-    V4,
-    V6,
-}
-
+pub enum IpAddrKind { V4, V6, }
 fn main() {
     let x = IpAddrKind::V4;
     match x {
         IpAddrKind::V4 => println!("Ovo je IPv4 adresa."), 
-        // Pokriven IpAddrKind::V4
         IpAddrKind::V6 => println!("Ovo je IPv6 adresa.") 
-        // Pokriven IpAddrKind::V6
         // Da je postojao IpAddrKind::V7 Rust bi zahtevao 
         // da i ta varijanta bude obradjena.
     }
@@ -52,19 +49,3 @@ fn main() {
 \caption{Provera šablona}
 \label{lst:pattern_matching}
 \end{listing}
-
-Za razliku od HIR-a koji je perzistiran tokom celokupnog izvršavanja kompajlera, THIR se odbacuje momenta
-kada više nema upotrebnu vrednost. Pored toga što su svi tipovi čvorova prisutni, THIR se odlukuje dodatnim 
-pojednostavljivanjem koda:
-\begin{enumerate}
-    \item Automatska referenciranja i dereferenciranja su eksplicitna.
-    \item Pozivi metoda i opterećeni operatori su konvertovani u obične pozive funkcija. 
-    \item Obim životnog veka je eksplicitan.
-\end{enumerate}
-% Izrazi, iskazi i \verb|match| ruke se čuvaju zasebno. 
-
-Pojednostavljenje čini THIR podobnim za proveru nebezbednog koda jer fundamentalno poseduje manje opcija, 
-nebezbedni pozivi metoda i nebezbedni pozivi funkcija imaju identičnu reprezentaciju. Ova provera 
-iskazuje grešku ako je nebezbedna operacija korišćena van \verb|unsafe| opsega.
-
-\subsubsection{Kreiranje srednje medjureprezentacije - MIR}

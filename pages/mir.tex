@@ -1,10 +1,74 @@
-\subsection{Posredna Reprezentacija Srednjeg Nivoa - MIR (Mid-Level Intermediate Representation)}
+\subsection{Medjureprezentacija srednjeg nivoa - MIR (Mid-Level Intermediate Representation)}
 
-Prvobitno koncept \verb|MIR|-a nije postojao. HIR se transformisao u LLVM reprezentaciju gde 
-vršila optimizacija. Glavni povod za uvod reprezentacije srednjeg nivoa 
-jeste inkrementalna kompilacija i MIR je struktuiran tako da ga je lako sačuvati i učitati, iako su se delovi
-koda promenili tokom vremena.
+Koncept medjureprezentacije srednjeg nivoa nije postojao od samog nastanka kompajlera. Medjutim,
+kako je kompajler postajao sve kompleksniji uvidela se potreba za reprezentacijom koja može da 
+se upotrebi u kontekstu inkrementalne kompilacije, kao i potreba da ta medjureprezentacija lako manipuliše 
+kontrolom toka. Kontrola toka je bila vezana za apstraktno sintaksno stablo što se pokazalo nedovoljno fleksibilno. 
+Graf kontrole toka je pravi alat za ovaj posao jer je kontrola toka eksplicitna. Graf kontrole toka je 
+struktuiran kao grupa osnovnih blokova koji su povezani granama. Ključna ideja bloka jeste da je to grupa naredbi (iskaza) 
+koja se izvršava zajedno. Svaki put kada se granom dodje do novog bloka, sve naredbe tog bloka moraju da se izvrše, pa tek onda postoji mogućnost 
+da se grana dalje. Poslednja nareba unutar bloka se naziva terminator. Brojni izrazi \ref{lst:block_code} koji se koriste u Rust jeziku se kompajliraju na 
+više osnovnih blokova \ref{lst:block_block}.
 
+\begin{listing}[H]
+\begin{minted}{rust}
+a = 1;
+if some_variable {
+    b = 1;
+} else {
+    c = 1;
+}
+d = 1;
+\end{minted}
+\caption{Isečak koda koji se prevodi u više osnovnih blokova}
+\label{lst:block_code}
+\end{listing}
+
+
+\begin{listing}[H]
+\begin{minted}{text}
+BB0: {
+    a = 1;
+    if some_variable {
+        goto BB1;
+    } else {
+        goto BB2;
+    }
+}
+BB1: {
+    b = 1;
+    goto BB3;
+}
+BB2: {
+    c = 1;
+    goto BB3;
+}
+BB3: {
+    d = 1;
+    ...
+}
+\end{minted}
+\caption{Isečak koda u formi osnovih blokova}
+\label{lst:block_block}
+\end{listing}
+
+
+
+Ovo se pokazuje kao pravo mesto da se 
+dealokacija memorije sprovede, svaki \verb|drop| je eksplicitan u srednjoj medjureprezentaciji. Jedina stvar koju 
+srednja reprezentacija ne zna eksplicitno jeste da li se dogodio prenos vlasništva. Ovu informaciju dobija na osnovu 
+tipa promenljive.
+
+Dokazati bezbednost formalno je izuzetno težak 
+problem u bilo kojem Turing kompletnom jeziku. Naime, reprezentacija srednjeg nivoa se generiše da bude dovoljno jednostavna 
+da bi se u jednom trenutku formalni dokazi mogli pisati na račun nje. 
+
+Optimizacije specifične za Rust su teško izvodljive bez uvodjenja reprezentacije pre interakcije sa LLVM-om. Srednja medjureprezentacija 
+ima mogućnost da sprovede analizu da li je bezbedno primeniti optimizaciju, i ako jeste da je unapred primeni. Uvodjenjem srednje medjureprezentacije bolje povlači granica izmedju samog jezika i LLVM-a jer 
+semantika jezika nije vezana za konverziju u LLVM medjureprezentaciju.
+
+
+Medjureprezentacija srednjeg nivoa nastaje procesuiranjem izraza iz \verb|THIR| reprezentacije rekurzivno.
 U HIR-u optimizacija \verb|for| petlje je svedena na \verb|while(let)| u MIR-u se prevodi na \verb|loop match| 
 primitivu \ref{lst:mir_for_1}.  Pozivi metoda su prevedeni u pozive funkcija još u THIR-u.
 
