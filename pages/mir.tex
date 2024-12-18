@@ -52,12 +52,36 @@ BB3: {
 \label{lst:block_block}
 \end{listing}
 
+Stek (\verb|Stack|) je LIFO (\verb|Last in First Out|) struktura podataka koju kompajler koristi da skladišti argumente funkcija,
+lokalne promenljive i privremene promenljive. U MIR reprezentaciji memorijske lokacije na steku su identifikovane pomoću indeksa. 
+Indeks se označava celobrojnom vrednošću koju prethodi donja crta (npr. \verb|_1|, \verb|_2|). Indeks \verb|_0| je specijalan, u njemu
+se skladišti povratna vrednost. Mesta su izrazi koji identifikuju lokaciju u memoriji. Mesto može biti sam indeks (\verb|_1|) ili može biti
+projekcija (\verb|_1.polje|). Projekcije su polja ili druge konstrukcije koje proizilaze iz mesta. Pristup polju je projekcija, za \verb|_1.polje|, \verb|_1| je mesto dok je \verb|polje| projekcioni element.
+Dereferenciranje je takođe projekcija, za \verb|*_1|, \verb|_1| je mesto dok je \verb|*| projekcioni element. 
+Desne vrednosti (\verb|RValues|) su izrazi koji generišu vrednost. Zovu se desne vrednosti zato što 
+stoje sa desne strane operatora dodele (\verb|=|). Operandi su argumenti desne vrednosti. Argument može biti konstanta ili mesto (kao što je \verb|_1|).
 
+Strukturu srednje medjureprezentacije je najlakše razumeti prevodjenjem jednostavnih programa poput \ref{lst:snippet-before-mir}. U dodatku \ref{lst:unoptimized-mir} se nalazi neoptimizovana njegova srednja medjureprezentacija. Glavna razlika izmedju optimizovane i neoptimizovanje srednje medjureprezentacije jeste to što neoptimizovana medjureprezentacija sadrži eksplicitne iskaze \verb|StorageLive| i \verb|StorageDead| unutar osnovnih blokova. Iskaz \verb|StorageLive| pruža informaciju da je promenljiva navedena u iskazu živa tj.
+da ju je moguće koristiti u daljem izvršavanju. Iskaz \verb|StorageDead| pruža informaciju da je promenljiva navedena u iskazu mrtva
+tj. nije je više moguće koristiti. Samim time ovo se pokazuje kao pravo mesto da se sprovodi dealokacija memorije.
+Jedina informacija koju srednja reprezentacija ne zna eksplicitno jeste da li se dogodio prenos vlasništva. Ovu informaciju dobija na osnovu tipa promenljive.
 
-Ovo se pokazuje kao pravo mesto da se 
-dealokacija memorije sprovede, svaki \verb|drop| je eksplicitan u srednjoj medjureprezentaciji. Jedina stvar koju 
-srednja reprezentacija ne zna eksplicitno jeste da li se dogodio prenos vlasništva. Ovu informaciju dobija na osnovu 
-tipa promenljive.
+\begin{listing}[H]
+\begin{minted}{text}
+fn main() {
+    let mut vec = Vec::new();
+    vec.push(1);
+    vec.push(2);
+}
+\end{minted}
+\caption{Isečak koda koji se prevodi u MIR}
+\label{lst:snippet-before-mir}
+\end{listing}
+
+MIR se generiše na osnovu \verb|mir_build| upita unutar THIR-a tj. sprovodi se samo nad izvršnim kodom. Upit se može uočiti u dodatku 3 \ref{lst:safety_check}.a Funkcije koje generišu MIR spadaju u jednu od dve grupe. Prva grupa su funkcije koje generišu naredbe.
+Ove funkcije uzimaju osnovni blok kao argument i dodaju mu nove naredbe. Druga grupa su funkcije koje generišu nove osnovne 
+blokove. Konstrukcija \verb|if| \verb|else| zahteva generisanje grafa oblika dijamanta tj. dva nova osnovna bloka.
+
 
 Dokazati bezbednost formalno je izuzetno težak 
 problem u bilo kojem Turing kompletnom jeziku. Naime, reprezentacija srednjeg nivoa se generiše da bude dovoljno jednostavna 

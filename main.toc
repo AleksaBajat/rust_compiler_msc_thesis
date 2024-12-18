@@ -18,9 +18,10 @@
 \contentsline {subsubsection}{\numberline {5.4.1}Bezbednost}{31}{subsubsection.5.4.1}%
 \contentsline {subsubsection}{\numberline {5.4.2}Provera šablona}{31}{subsubsection.5.4.2}%
 \contentsline {subsection}{\numberline {5.5}Medjureprezentacija srednjeg nivoa - MIR (Mid-Level Intermediate Representation)}{32}{subsection.5.5}%
-\contentsline {section}{\numberline {6}Zaključak}{35}{section.6}%
-\contentsline {section}{\numberline {7}Literatura}{36}{section.7}%
-\contentsline {section}{\numberline {8}Dodatak 1}{37}{section.8}%
-\contentsline {section}{\numberline {9}Dodatak 2}{38}{section.9}%
-\contentsline {section}{\numberline {10}Dodatak 3}{39}{section.10}%
-\contentsline {section}{\numberline {11}Podaci o kandidatu}{40}{section.11}%
+\contentsline {section}{\numberline {6}Zaključak}{36}{section.6}%
+\contentsline {section}{\numberline {7}Literatura}{37}{section.7}%
+\contentsline {section}{\numberline {8}Dodatak 1}{38}{section.8}%
+\contentsline {section}{\numberline {9}Dodatak 2}{39}{section.9}%
+\contentsline {section}{\numberline {10}Dodatak 3}{40}{section.10}%
+\contentsline {section}{\numberline {11}Dodatak 4}{41}{section.11}%
+\contentsline {section}{\numberline {12}Podaci o kandidatu}{42}{section.12}%
