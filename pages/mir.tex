@@ -1,10 +1,23 @@
-\subsection{Medjureprezentacija srednjeg nivoa - MIR (Mid-Level Intermediate Representation)}
+\subsection{Medjureprezentacija srednjeg nivoa (MSN) - Mid-Level Intermediate Representation (MIR)}
 
-Koncept medjureprezentacije srednjeg nivoa nije postojao od samog nastanka kompajlera. Medjutim,
-kako je kompajler postajao sve kompleksniji uvidela se potreba za reprezentacijom koja može da 
-se upotrebi u kontekstu inkrementalne kompilacije, kao i potreba da ta medjureprezentacija lako manipuliše 
-kontrolom toka. Kontrola toka je bila vezana za apstraktno sintaksno stablo što se pokazalo nedovoljno fleksibilno. 
-Graf kontrole toka je pravi alat za ovaj posao jer je kontrola toka eksplicitna. Graf kontrole toka je 
+Koncept medjureprezentacije srednjeg nivoa nije postojao od samog nastanka kompajlera. Prvobitno je koristio apstraktno sintaksno stablo 
+iz inicijalnog parsiranja sve do finalne generacije bitkoda. Ovaj metod je dovodio do brojnih problema. Apstraktno sintaksno stablo i reprezentacija 
+visokog nivoa su izgledom veoma slični izvornom kodu. Prevođenje sintaktičkog šećera na osnovni konstrukt nije imalo predodređeno mesto za čuvanje. 
+Stoga svaka faza koja je morala da rasuđuje nešto na osnovu koda (npr. provera tipova, generisanje koda) je morala da simulira prevođenje od početka.
+Sa obzirom da bi svaka faza morala biti upoznata sa svakim specijalnim slučajem prevođenja, krajnji rezultat uprošćavanja šećera bi činilo kompajler 
+kompleksnijim, a ne jednostavnijim. Rasuđivanje kontrole toka preko apstraktnog sintaksnog stabla je veoma kompleksno. Graf kontrole toka se kreirao
+iznad ASS-a, koristo se za analizu ali ne i tokom prevođenja, čime se analiziran graf kontrole toka nije morao podudarati sa grafom kontrole toka generisanog koda. 
+Postojala su brojna mesta na kojima bi bilo efikasno upotrebiti Rust specifično znanje za izvršavanje optimizacija gde bi postojanje srednjeg sloja značajno pomoglo.
+Migriranje od LLVM-a je bilo praktično nemoguće jer je semantika Rust jezika spojena sa korakom prevođenja u LLVM medjureprezentaciju.
+Formalni dokazi su jedan od načina na koji bi Rust voleo da garantuje bezbednost, i samim time prethodno navedena, uvek promenljiva 
+osnova nije podobna za ovaj posao.
+
+Naime, uvođenje još jedne međureprezentacije ne dolazi bez mana. Konvertovanje iz ASS-a u MSN uvodi dodatno vreme prilikom kompajliranja. Više truda je potrebno 
+da bi se kreirale kvalitetne poruke o problemima unutar koda jer je MSN značajno drugačije strukture od onoga što je korisnik uneo.
+
+\subsubsection{Graf kontrole toka}
+
+Danas, srednju medjureprezentaciju čini skup fajlova (kada se potraži od kompajlera) gde svaki opisuje izvršavanje jedne funkcije i direktno je vezan za graf kontrole toka. Graf kontrole toka je 
 struktuiran kao grupa osnovnih blokova koji su povezani granama. Ključna ideja bloka jeste da je to grupa naredbi (iskaza) 
 koja se izvršava zajedno. Svaki put kada se granom dodje do novog bloka, sve naredbe tog bloka moraju da se izvrše, pa tek onda postoji mogućnost 
 da se grana dalje. Poslednja nareba unutar bloka se naziva terminator. Brojni izrazi \ref{lst:block_code} koji se koriste u Rust jeziku se kompajliraju na 
@@ -53,7 +66,7 @@ BB3: {
 \end{listing}
 
 Stek (\verb|Stack|) je LIFO (\verb|Last in First Out|) struktura podataka koju kompajler koristi da skladišti argumente funkcija,
-lokalne promenljive i privremene promenljive. U MIR reprezentaciji memorijske lokacije na steku su identifikovane pomoću indeksa. 
+lokalne promenljive i privremene promenljive. U MSN reprezentaciji memorijske lokacije na steku su identifikovane pomoću indeksa. 
 Indeks se označava celobrojnom vrednošću koju prethodi donja crta (npr. \verb|_1|, \verb|_2|). Indeks \verb|_0| je specijalan, u njemu
 se skladišti povratna vrednost. Mesta su izrazi koji identifikuju lokaciju u memoriji. Mesto može biti sam indeks (\verb|_1|) ili može biti
 projekcija (\verb|_1.polje|). Projekcije su polja ili druge konstrukcije koje proizilaze iz mesta. Pristup polju je projekcija, za \verb|_1.polje|, \verb|_1| je mesto dok je \verb|polje| projekcioni element.
@@ -74,29 +87,21 @@ fn main() {
     vec.push(2);
 }
 \end{minted}
-\caption{Isečak koda koji se prevodi u MIR}
+\caption{Isečak koda koji se prevodi u MSN}
 \label{lst:snippet-before-mir}
 \end{listing}
 
-MIR se generiše na osnovu \verb|mir_build| upita unutar THIR-a tj. sprovodi se samo nad izvršnim kodom. Upit se može uočiti u dodatku 3 \ref{lst:safety_check}.a Funkcije koje generišu MIR spadaju u jednu od dve grupe. Prva grupa su funkcije koje generišu naredbe.
-Ove funkcije uzimaju osnovni blok kao argument i dodaju mu nove naredbe. Druga grupa su funkcije koje generišu nove osnovne 
-blokove. Konstrukcija \verb|if| \verb|else| zahteva generisanje grafa oblika dijamanta tj. dva nova osnovna bloka.
+\subsubsection{Optimizacija koda u MSN-u}
 
+Reprezentacija srednjeg nivoa u Rust kompajleru igra ključnu ulogu u optimizaciji koda pre njegove predaje LLVM bekendu. 
+Generiše se iz TMVN-a i fokusira se isključivo na izvršni kod. Jedna od glavnih prednosti MSN-a je omogućavanje optimizacija specifičnih za Rust koje bi bilo teško 
+sprovesti direktno na nivou LLVM IR-a. MSN pruža osnovu za analizu bezbedne primene optimizacija, 
+jasno razdvajajući semantiku jezika od LLVM bekenda. MSN teži da pojednostavi reprezentaciju koda, potencijalno olakšavajući formalne dokaze u budućnosti.
 
-Dokazati bezbednost formalno je izuzetno težak 
-problem u bilo kojem Turing kompletnom jeziku. Naime, reprezentacija srednjeg nivoa se generiše da bude dovoljno jednostavna 
-da bi se u jednom trenutku formalni dokazi mogli pisati na račun nje. 
+Proces generisanja MSN-a rekurzivno obrađuje izraze iz TMVN-a. Odličan primer optimizacije i pojednostavljenja koje MSN omogućava je 
+transformacija petlji. Na primer, \verb|for| petlja, koja se u ranijoj fazi MVN-a može svodi na \verb|while let| konstrukciju,
+u MSN-u inicijalno biva transformisana u ekvivalentnu \verb|loop| petlju sa \verb|match| izrazom unutar nje:
 
-Optimizacije specifične za Rust su teško izvodljive bez uvodjenja reprezentacije pre interakcije sa LLVM-om. Srednja medjureprezentacija 
-ima mogućnost da sprovede analizu da li je bezbedno primeniti optimizaciju, i ako jeste da je unapred primeni. Uvodjenjem srednje medjureprezentacije bolje povlači granica izmedju samog jezika i LLVM-a jer 
-semantika jezika nije vezana za konverziju u LLVM medjureprezentaciju.
-
-
-Medjureprezentacija srednjeg nivoa nastaje procesuiranjem izraza iz \verb|THIR| reprezentacije rekurzivno.
-U HIR-u optimizacija \verb|for| petlje je svedena na \verb|while(let)| u MIR-u se prevodi na \verb|loop match| 
-primitivu \ref{lst:mir_for_1}.  Pozivi metoda su prevedeni u pozive funkcija još u THIR-u.
-
-\begin{listing}[H]
 \begin{minted}{rust}
 let mut iterator = IntoIterator::into_iter(vec);
 loop {
@@ -106,71 +111,143 @@ loop {
     }
 }
 \end{minted}
-\caption{"while let" posle pojednostavljenja}
-\label{lst:mir_for_1}
-\end{listing}
 
-Reprezentacija srednjeg nivoa dozvoljava za još jedan vid optimizacije na nivou frontenda pojednostavljivanjem
-sintakse na primitive koje nisu dostupne u regularnom jeziku.
+Ova struktura preslikava semantiku \verb|while let|, ali MSN ide korak dalje u pojednostavljenju kontrole toka. Uvode se eksplicitne \verb|goto| 
+naredbe i labele. Iako je \verb|goto| ključna reč koja nije dozvoljena u izvornom Rust kodu zbog potencijalnog narušavanja čitljivosti i 
+otežanog praćenja toka izvršavanja u kompleksnim programima, u internoj reprezentaciji poput MSN-a on svodi petlje i grananja na najosnovnije 
+operacije skoka. Ovo čini graf kontrole toka eksplicitnim i lakšim za analizu i dalju transformaciju od strane kompajlera. 
+Petlja iz prethodnog primera sada izgleda ovako:
 
-\begin{listing}[H]
+\begin{minted}{rust}
+let mut iterator = IntoIterator::into_iter(vec);
+
+loop: 
+    match Iterator::next(&mut iterator) {
+        Some(elem) => { process(elem); goto loop; } 
+        None => { goto break; } 
+    }
+
+break: 
+\end{minted}
+
+Poslednji korak u ovom primeru je pojednostavljenje \verb|match| izraza, koji je i dalje relativno kompleksna sintaktička celina. 
+Dok \verb|match| u izvornom kodu grupiše proveru obrasca i pristup podacima unutar njega, 
+MSN ga razdvaja radi veće granularnosti i jednostavnosti osnovnih operacija. 
+Uvodi se primitivna \verb|switch| naredba (koja nije dostupna u izvornom Rust-u) koja se bavi isključivo proverom diskriminante 
+(da li je rezultat \verb|Some| ili \verb|None|). Pristup podacima unutar varijante 
+(izdvajanje vrednosti \verb|elem| iz \verb|Some|) obavlja se kao zasebna operacija unutar odgovarajuće grane kontrole toka:
+
+\break
+
 \begin{minted}{rust}
 let mut iterator = IntoIterator::into_iter(vec);
 
 loop:
-    match Iterator::next(&mut iterator) {
-        Some(elem) => { process(elem); goto loop; }
-        None => { goto break; }
-    }
-
-break:
-\end{minted}
-\caption{"while let" posle pojednostavljenja}
-\label{lst:mir_for_2}
-\end{listing}
-
-Izraz \verb|goto| je u inženjerskoj zajednici gledan sa visine jer kontrola toka nakon odredjene kompleksnosti
-postaje nerazumljiva. Rust iz istog razloga ne dozvoljava upotrebu ove ključne reči, ali u MIR-u svodi 
-petlju na najjednostavniji oblik \ref{lst:mir_for_2}.
-
-\newpage
-U isečku koda \ref{lst:mir_for_2}, jedina kompleksnija sintaktička celina je \verb|match|. U samom jeziku 
-grupisanje provere i pristup podatku je smisleno ali u MIR-u se odvaja na dve celine \ref{lst:mir_for_3}.
-
-\begin{listing}[H]
-\begin{minted}{rust}
-loop:
-    let tmp = Iterator::next(&mut iterator);
+    let tmp = Iterator::next(&mut iterator); 
     
-    switch tmp {
-        Some => {
-            let elem = (tmp as Some).0;
-            process(elem);
-            goto loop;
+    switch tmp { 
+        Some => { 
+            let elem = (tmp as Some).0; 
+            process(elem); 
+            goto loop; 
         }
-        None => {
-            goto break;
+        None => { 
+            goto break; 
         }
     }
     
 break:
-    ....
 \end{minted}
-\caption{"while let" posle pojednostavljenja}
-\label{lst:mir_for_3}
-\end{listing}
 
-Naime ovako sveden kod nikada nije tekstualnom obliku. MIR je graf kontrole toka koji se može predstaviti
-uz pomoć \verb|graphviz|-a \ref{lst:mir_print}. Filter mora biti zadatat prilikom poziva ove komande. 
-Za prikaz celokupnog izlaza koristi se \verb|all| filter, dok ako je neka pojedinačna funkcija od interesovanja
-njeno ime (mnogo češće slučaj).
+
+Veoma je često da prilikom \verb|debug|-ovanja srednje reprezentacije potreban prikaz samo jedne funkcije
+umesto celokupnog prevoda. Za prikaz celokupnog izlaza koristi se \verb|all| filter, dok ako je neka pojedinačna funkcija od interesovanja
+njeno ime.
 
 \begin{listing}[H]
 \begin{minted}{bash}
 cargo rustc -- -Z dump-mir=[filter] -Z dump-mir-graphviz
 \end{minted}
-\caption{Ispis i prikaz MIR-a}
+\caption{Ispis i prikaz MSN-a}
 \label{lst:mir_print}
 \end{listing}
 
-\todo{MIR je opsežan, ne izgleda kao u primerima (umereni nivo obfuskacije). Ovde ima još značajno puno sadržaja koji nije opisan.}
+\subsubsection{Neleksički životni vekovi}
+
+Pozajmljivač (\verb|borrow-checker|) nalaže da se pozajmljena vrednost ne može mutirati niti joj se može promeniti vlasništvo. Svaki put kada se vrednost pozajmi kreira se životni vek njene reference. 
+Životni vek reference se odnosi na mesto koda gde bi se referenca mogla koristiti. Kompajler će se potruditi da evaluira najmanji opseg koji pokriva svako potencijalno korišćenje reference.
+Životni vek može da se odnosi i na vrednost i na referencu. Da bi bilo jasno o čemu se govori, životni vek će se odnositi na životni vek reference, dok će se opseg odnositi na životni vek vrednosti \ref{lst:scope-lifetime}.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+fn foo() {
+    let mut data = vec!['a', 'b', 'c'];    // --+ 'opseg
+    capitalize(&mut data[..]);             //   |
+//  ^~~~~~~~~~~~~~~~~~~~~~~~~ 'životni vek //   |
+    data.push('d');                        //   |
+    data.push('e');                        //   |
+    data.push('f');                        //   |
+} // <------------------------------------------+
+\end{minted}
+\caption{Opseg i životni vek}
+\label{lst:scope-lifetime}
+\end{listing}
+
+\break
+
+Leksički (statički) životni vek se određuje na osnovu strukture programa. U primeru \ref{lst:lexical-lifetime} definiše se mutabilna referenca nad vektorom \verb|data|.
+Referencu je moguće koristiti u celokupnom opsegu funkcije, stoga opseg funkcije čini njen životni vek. To znači da su pozivi \verb|push| greška jer se dešavaju tokom životnog veka
+reference.
+
+\begin{listing}[H]
+\begin{minted}{rust}
+fn bar() {
+    let mut data = vec!['a', 'b', 'c'];
+    let slice = &mut data[..]; // <-+ 'životni vek
+    capitalize(slice);         //   |
+    data.push('d'); // GREŠKA!  //   |
+    data.push('e'); // GREŠKA!  //   |
+    data.push('f'); // GREŠKA!  //   |
+} // <------------------------------+
+\end{minted}
+\caption{Problem kod leksičkog životnog veka}
+\label{lst:lexical-lifetime}
+\end{listing}
+
+Ovakvi problemi su se mogli zaobići enkapsuliranjem reference u blok \ref{lst:lexical-lifetime-ok}. Ovaj zaobilazni put je možda logičan ali izgleda veštački i otežava korišćenje jezika. 
+
+\begin{listing}[H]
+\begin{minted}{rust}
+fn bar() {
+    let mut data = vec!['a', 'b', 'c'];
+    {
+        let slice = &mut data[..]; // <-+ 'životni vek
+        capitalize(slice);         //   |
+    } // <------------------------------+
+    data.push('d'); // OK
+    data.push('e'); // OK
+    data.push('f'); // OK
+}
+\end{minted}
+\caption{Opseg i životni vek}
+\label{lst:lexical-lifetime-ok}
+\end{listing}
+
+Prethodni primer je jedan od najjednostavnijih problema leksičkog životnog veka, napredniji problemi postaju teži za uočavanje i još teži za razumevanje.
+Uvođenjem MSN-a dobijen je efikasan način evaluacije životnog veka na osnovu kontrole toka grafa gde se granularno određuje životni vek reference \ref{lst:dynamic-lifetime} (ovako \verb|Rust| radi danas).
+
+\begin{listing}[H]
+\begin{minted}{rust}
+fn bar() {
+    let mut data = vec!['a', 'b', 'c'];
+    let slice = &mut data[..];   // <-+ 'životni vek
+    capitalize(slice);           //   |
+    // <------------------------------+
+    data.push('d'); // OK
+    data.push('e'); // OK
+    data.push('f'); // OK
+} 
+\end{minted}
+\caption{Dinamički životni vek}
+\label{lst:dynamic-lifetime}
+\end{listing}

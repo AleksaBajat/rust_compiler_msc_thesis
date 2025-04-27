@@ -1,8 +1,8 @@
-\subsection{Medju reprezentacija visokog nivoa - HIR (High-Level Intermediate Representation)}
+\subsection{Medjureprezentacija visokog nivoa (MVN) - High-Level Intermediate Representation (HIR)}
 
 \subsubsection{Konstrukcija}
 
-Obradom proširenog oblika apstraktnog sintaksnog stabla nastaje medju reprezentacija visokog nivoa.
+Obradom proširenog oblika apstraktnog sintaksnog stabla nastaje medjureprezentacija visokog nivoa.
 Proces obrade se naziva snižavanje (\verb|lowering|). Neke sintaksne forme bivaju pojednostavljene.
 Zagrade se uklanjaju jer struktura stabla eksplicitno odredjuje redosled operacija. \verb|For| petlje 
 se konvertuju u \verb|while(let)| petlje \ref{lst:hir_iter}. Izraz \verb|if let| se prevodi 
@@ -27,7 +27,7 @@ while let Some(elem) = iterator.next() {
 \end{listing}
 
 \verb|Crate| je ponovo čvor najvišeg nova ali za razliku \verb|Crate|-a apstraktnog sintaksnog stabla koji sadrži
-samo podatke o korenskom modulu, \verb|Crate| visoke medju reprezentacije skladišti sadržaj celokupnog paketa.
+samo podatke o korenskom modulu, \verb|Crate| visoke medjureprezentacije skladišti sadržaj celokupnog paketa.
 Izvorni kod koji se ne koristi niti implicitno niti ekplicitno nije postojan unutar ovog pogleda. Značaj 
 ove osobine se najviše ispoljava prilikom upotrebe eksternih biblioteka, gde je uobičajno koristiti samo 
 deo funkcionalnosti.

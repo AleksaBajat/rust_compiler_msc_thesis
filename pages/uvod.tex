@@ -1,20 +1,38 @@
 \section{Uvod}
 
-U svetu razvoja sistema visokih performansi, operativnih sistema, drajvera i bilo kog drugog kritičnog softvera koriste se jezici niskog nivoa kao što su C i C++.
-Tokom godina Microsoft je uvideo da je preko 70\% bezbednosnih slabosti nastalo pogrešnom manipulacijom i korupcijom memorije [1]. 
-C nema odbrambene mehanizme od ovakvih problema (pored potencijalnih dodatnih upozorenja koja se mogu ostvariti dvostrukom upotrebom GCC i Clang kompajlera), dok C++ uprkos dodavanju konstrukta kao što su \verb|unique_ptr|, \verb|shared_ptr| i \verb|weak_ptr| interoperabilnost sa starijim standardima ili bibliotekama zahteva korišćenje sirovih pokazivača. 
+Prilikom razvoja operativnih sistema, drajvera, bootloader-a i drugih kritičnih sistemskih softvera, koriste se jezici niskog nivoa kao što su C i C++.
+Tokom godina Microsoft je uvideo da je preko 70\% bezbednosnih slabosti nastalo neadekvatnim rukovanjem memorijom [1]. Najčešći primeri su korišćenje memorije 
+nakon oslobadjanja, višestruko oslobadjanje iste memorijske lokacije, nebezbedna aritemetika pokazivačima, curenje memorije i prepopunjavanje bafera.
+Takođe sa stanovišta paralelnog programiranja, oba jezika zahtevaju pedantno rukovanje muteksima i semaforima jer u suprotnom nastaju novi problemi poput 
+problema trke i problema medjusobnog čekanja. Problem trke nastaje kada dve ili više niti pokušavaju da izmene podatak istovremeno, pri čemu redosled izvršavanja 
+utiče na ishod. Problem medjusobnog čekanja nastaje kada dve ili više niti čekaju jednu na drugu da oslobode resurse pri čemu se izvršavanje 
+zaustavlja.
 
-Rust jezik je nastao sa ciljem da reši ovaj problem. Podrazumevana upotreba jezika je inherentno bezbedna sa aspekta memorije i paralelizma. Bezbednost se ostvaruje robustnim sistemom tipova, novog načina rukovanja memorijom i veoma striktnog \verb|rustc| kompajlera.
-U C++ ekosistemu koriste se softverski obrasci kao što je \verb|Scope-bound Resource Management| da bi se standardizovala alokacija i dealkoacija memorije, ali korisnik jezika nije primoran da softvrski obrazac upotrebi. U Rust jeziku izbor ne postoji, na kraju svakog opsega vrši se automatska dealokacija memorije preko \verb|borrow checker| mehanizma (nije potreban manuelni poziv \verb|free|).
-C i C++ poseduju veoma dvosmislene i neprecizne poruke kada se greška dogodi dok Rust jezik karakterišu veoma precizne poruke koje opisuju gde se desila greška i kako je potencijalno rešiti.
+Programski jezik C nema ugrađene odbrambene mehanizme od prethodno navedenih problema. Pridržavanje C standardu otvara mogućnost za uporedo 
+korišćenje GCC i Clang kompajlera čime se dobija uvid u relativno štura upozorenja od strane oba programska prevodioca.
+Sa druge strane programski jezik C++ uprkos dodavanju primitiva kao što su \verb|unique_ptr|, \verb|shared_ptr| i \verb|weak_ptr|, i dalje zbog interoperabilnosti 
+sa starijim standardima ili bibliotekama zahteva korišćenje sirovih pokazivača. Vremenom su se razvili softverski obrasci kao što je \verb|Scope-bound Resource Management|
+koje nastoji da dobrim praksama umanji šansu da se problem prvobitno desi. Naime, korisnik jezika nije primoran da softverski obrazac upotrebi ili čak zna 
+za njegovo postojanje.
 
-Prvobitna verzija Rust kompajlera je napisana u \verb|O'Caml| jeziku, dok je svaka sledeća verzija napisana u samom Rust-u.
-Medjutim treba imati na umu da je Rust samo \verb|frontend| nad \verb|LLVM|-om. LLVM je kolekcija modularnih i ponovo iskoristivih tehnologija za izradu kompajlera. Rust se oslanja u potpunosti na \verb|LLVM| prilikom generisanja mašinskog koda, dok je svaki drugi deo
-(\verb|frontend|) napisan potpuno ispočetka.
-Veliki deo Rust jezika je izuzetno inovativan i samim tim to je razlog da se detaljno istraži kako u pozadini funkcioniše.
+Rust je programski jezik stvoren s jasnim ciljem: da reši probleme povezane sa memorijskom i paralelnom bezbednošću. 
+Njegova podrazumevana upotreba garantuje bezbednost zahvaljujući robustom sistemu tipova, inovativnom načinu upravljanja memorijom i striktnog \verb|rustc| kompajlera.
+Za razliku od C i C++ koji često daju nejasne poruke o greškama, Rust nudi izuzetno precizne dijagnostičke poruke koje tačno ukazuju na mesto 
+greške i nude potencijalna rešenja.
 
-Reprezentacija izvornog koda jeste prikaz ili skup prikaza izvornog koda korisnika jezika koji obezbedjuju tipove, dijagnostiku,
-automatsku dealokaciju memorije i ostale ergonomske i funkcionalne delove jezika.
+Sa obzirom na značajne inovacije koje donosi Rust jezik, detaljno razumevanje njegovog internog funkcionisanja je od velikog značaja. Rust-ove garancije 
+bezbednosti nisu magične, primarno proizilaze iz sistema pravila \verb|borrow-checker|-a, životnih vekova i osobina koje garantuju bezbednost nekog tipa 
+u paralelnom okruženju. Rust nudi mnoge napredne funkcije kao što su makroi, unsafe kod, FFI (Foreign Function Interface) za interakciju sa C kodom. Detaljno razumevanje osnova jezika i njegovog internog funkcionisanja je preduslov za efikasno korišćenje ovih naprednih 
+mogućnosti na siguran i efikasan način. Na primer, kada se koristi unsafe blok, programer preuzima odgovornost za bezbednost memorije, 
+što zahteva duboko razumevanje načina na koji Rust obično to radi.
+
+Zanimljivo je da je prva verzija Rust kompajlera bila napisana u O'Caml-u, ali su sve naredne verzije razvijene u samom Rust-u. 
+Važno je napomenuti da je Rust zapravo samo frontend za LLVM. LLVM predstavlja skup modularnih i višekratno upotrebljivih tehnologija za izgradnju kompajlera. 
+Rust se u potpunosti oslanja na LLVM za generisanje mašinskog koda, dok je kompletan frontend Rust-a napisan od nule.
+
+Medjureprezentacije izvornog koda u Rust-u obuhvataju različite prikaze korisničkog koda koji omogu\hyp{}ćavaju ključne funkcionalnosti jezika, 
+uključujući proveru tipova, dijagnostiku grešaka, automatsku dealo\hyp{}kaciju memorije i druge ergonomske i funkcionalne karakteristike.
+
 \newpage
 
 \section{Pozadina}
@@ -25,7 +43,7 @@ LLVM seta alata.
 \subsection{Rust jezik}
 
 \verb|Rust| je statički tipiziran jezik koji je nastao 2006. godine kao lični projekat \verb|Graydon| \verb|Hoare|-a, radnika kompanije 
-Mozila. Uvidevši potencijal jezika, Mozila je započela sponzorisanje projekta 2010. godine kada je jezik i javno 
+Mozilla. Uvidevši potencijal jezika, Mozila je započela sponzorisanje projekta 2010. godine kada je jezik i javno 
 predstavljen \cite{rust-language}. \verb|Rust| je jezik niskog nivoa koji se fokusira na memorijsku bezbednost
 i bezbedan paralelizam bez oslanjanja na skupljač smeća (\verb|garbage| \verb|collector|). Skupljač smeća 
 obično uvodi lakoću programiranja na uštrb nedeterminističkih performansi usled oslobadjanja memorije 
@@ -41,7 +59,7 @@ pridobijen referencom) tu memoriju na kraju opsega oslobodi.
 
 U jeziku \verb|C| postoje dva načina deljenja 
 memorije: preko vrednosti i preko reference (pokazivača). Deljenje preko vrednosti (kopija) je
-podrazumevano. U \verb|Rust|-u ne postoji deljenje preko vrednosti, već je osnovna akcija prenos vlasništva.
+podrazumevano. U \verb|Rust|-u deljenje preko vrednosti nije podrazu\hyp{}mevano ponašanje, već je osnovna akcija prenos vlasništva.
 Deljenje preko vrednosti se može simulirati kloniranjem (funkcija \verb|clone|) koju prati prenos vlasništva.
 Opseg u kome je memorija dodeljena varijabli validna 
 se naziva životni vek. Vlasništvo onemogućuje brojne greške kao što su korišćenje nakon oslobadjanja i curenje 
@@ -52,7 +70,7 @@ kodu \ref{lst:user_after_free_rust} predstavljen je isti koncept u \verb|Rust| j
 \verb|drop| preuzmima vlasništvo nad memorijom 
 i oslobadja je, simulirajući kraj opsega. Izvorni kod \ref{lst:user_after_free_rust} se neće 
 uspešno kompajlirati jer se vrši pokušaj manipulacijom memorije nad varijablom kojoj je prošao životni vek.
-Ujedno je demonstrirano da korisnik \verb|Rust| jezika ne mora da brine o životnom veku varijable, isključujući
+Ujedno je demonstrirano da korisnik \verb|Rust| jezika ne mora da se stara o životnom veku varijable, isključujući
 curenje memorije kao opcije.
 
 \begin{multicols}{2}
@@ -81,7 +99,7 @@ drop(a);
 
 U jeziku \verb|C++|, dobra praksa je pravilno označavati nepromenljivost reference ili vrednosti
 unutar funkcija korišćenjem ključne reči \verb|const|, obaveštavajući budućeg korisnika funkcije 
-o promenljivosti. U jeziku \verb|Rust|, promenljivost mora da se naznači ekspicitno upotrebom ključne 
+o promenljivosti. U jeziku \verb|Rust|, promenljivost mora da se naznači eksplicitno upotrebom ključne 
 reči \verb|mut|. Inverzija principa je omogućila daleko bolju čitljivost i razumevanje koda.
 
 Bezbedni paralelizam je jedna od glavnih odlika \verb|Rust| jezika. Realizuje se pomoću osobina (\verb|trait|)
@@ -92,11 +110,11 @@ Ako struktura zadovoljava ugovor koji osobina nalaže (obično ispunjenje drugih
 metoda) onda je osobina primenljiva nad strukturom. Ključne osobine koje realizuju bezbednost podataka
 u paralelnom okruženju jesu \verb|Sync| i \verb|Send|. Tip je \verb|Send| ako je bezbedno poslati ga 
 u drugu nit. Tip je \verb|Sync| ako ga je bezbedno deliti izmedju niti. Tipovi sačinjeni od drugih tipova koji
-implementiraju \verb|Sync| i/ili \verb|Send| su automatski \verb|Sync| i/ili \verb|Sync|. Skoro sve primitive
+implementiraju \verb|Sync| i/ili \verb|Send| su automatski \verb|Sync| i/ili \verb|Send|. Skoro sve primitive
 unutar \verb|Rust| jezika su \verb|Send| i \verb|Sync|. U bitnije izuzetke spadaju sirovi pokazivači jer nemaju
-bezbednosne garancije, \verb|UnsafeCell| (samim tima i \verb|Cell| i \verb|RefCell|) jer implementiraju
+bezbednosne garancije, \verb|UnsafeCell| (samim time i \verb|Cell| i \verb|RefCell|) jer implementiraju
 unutrašnju mutabilnost čime je tip rizik u vidu štetnog preplitanja, kao i \verb|Rc| (brojač referenci) 
-jer je broj referenci deljen i nesinhronizovan. Uz \verb|std::marker|, ove osobine su jedine primitive koje su 
+jer je broj referenci deljen i nesinhronizovan. Uz \verb|std::marker|, \verb|Sync| i \verb|Send| su jedine osobine koje su 
 deo samog kompajlera, a ne standardne biblioteke.
 
 Atributi su zaglavlja koja pružaju dodatne informacije kompajleru. Atributi mogu biti spoljašnji ili 
@@ -276,7 +294,7 @@ done:
 \verb|Rust| tim ima cilj da izgeneriše pravilnu \verb|LLVM| medju reprezentaciju, na osnovu koje 
 \verb|LLVM| izvršava optimizacione prolaske i generiše kod. Greške prilikom generisanja koda ne mora da 
 održava \verb|Rust| tim, što značajno smanjuje količinu ljudi koja aktivno mora da bude uključena u razvoj. 
-Svaka distribucija koju \verb|LLVM| podržava automatski podržava i \verb|Rust|. Optimizacije se ne moraju 
+Svaka ciljna distribucija (arhitektura) koju \verb|LLVM| podržava automatski podržava i \verb|Rust|. Optimizacije se ne moraju 
 posebno pisati i održavati jer \verb|LLVM| već poseduje značajan broj čestih optimizacija. \verb|Rust| 
 omogućava kompajliranje na osnovu više \verb|LLVM| verzija, poslednja glavna verzija je uvek podržana,
 i obično su podržane jedna ili dve ispod nje.

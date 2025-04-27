@@ -1,1 +1,20 @@
 \section{Zaključak}
+
+Ovaj master rad pružio je uvid u arhitekturu Rust kompajlera, sa posebnim fokusom na ključnu ulogu koju igraju međureprezentacije izvornog koda u procesu prevođenja. 
+Počevši od osnova Rust jezika, njegovog ekosistema sa alatom Cargo, i oslanjanja na LLVM projekat za generisanje optimizovanog mašinskog koda, 
+analiziran je sam proces kompajliranja.
+
+Centralni deo rada detaljno je istražio putanju koda kroz seriju međureprezentacija. 
+Pokazano je kako se od inicijalnog toka tokena i ASS-a, preko MVN-a koji vrši pojednostavljenje sintakse i predstavlja platformu za prelazak sa \verb|pipeline|
+kompajlerske arhitekture na arhitekturu zasnovanu na upitima, dolazi do TMVN-a gde se integrišu informacije o tipovima ključne za bezbednost 
+i analizu šablona.
+
+Posebna pažnja posvećena je međureprezentaciji srednjeg nivoa (MSN). Naglašena je njena uloga kao eksplicitnog grafa kontrole toka,
+što je čini fundamentalnom za implementaciju Rust-ovih garancija memorijske bezbednosti kroz proveru pozajmljivanja i neleksičke životne vekove.
+Takođe, MSN služi kao osnova za važne Rust-specifične optimizacije, pre nego što se dalja optimizacija i generisanje koda prepuste LLVM-u.
+
+Kroz ovu analizu, demonstrirano je da višefazni pristup sa pažljivo dizajniranim međureprezentacijama nije samo tehnički detalj,
+već suštinski mehanizam koji omogućava Rustu da istovremeno postigne svoje glavne ciljeve: memorijsku bezbednost bez sakupljača smeća,
+visoke performanse koje pariraju C/C++-u, i izražajnost jezika sa modernim karakteristikama. Složenost kompajlera je efikasno modularizovana,
+omogućavajući rigorozne provere i optimizacije na najpogodnijem nivou apstrakcije. Razumevanje ovih internih faza ključno je za dalje unapređenje kompajlera,
+razvoj alata za analizu koda i dublje shvatanje samog jezika Rust.

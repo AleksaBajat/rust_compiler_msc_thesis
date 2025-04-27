@@ -1,9 +1,9 @@
-\section{Medju reprezentacije izvornog koda}
+\section{Medjureprezentacije izvornog koda}
 
 Prilikom kompajliranja \verb|Rust| izvornog koda, \verb|Rust| \verb|frontend| mora da osigura da je 
 kod sintaktički i semantički tačan da bi mogao da izgeneriše pravilnu \verb|LLVM| medju reprezentaciju 
 na osnovu koje se generiše mašinski kod. Da bi se ovo efektivno izvelo \verb|Rust| \verb|frontend| poseduje 
-sopstvene medju reprezentacije koje obavljaju distinktne dužnosti. 
+sopstvene medjureprezentacije koje obavljaju distinktne dužnosti. 
 
 Leksički analizator ili lekser je ulazna tačka kompajlera. Lekser čita izvorni kod kao tok karaktera i grupiše karaktere 
 u sekvence koje imaju značenje. Ovaj proces se naziva leksička analiza ili skeniranje, a sekvence karaktera se nazivaju lekseme. 
@@ -21,13 +21,13 @@ apstraktno sintaksno stablo. Apstraktno sintaksno stablo eksplicitno naznačava 
 i relativno ga je lako validirati.
 
 Poslednji korak u \verb|Rust| \verb|frontend|-u jeste semantička analiza. Semantička analiza se sprovodi 
-kroz tri medju reprezentacije, reprezentacija visokog nivoa, tipizirana reprezentacija visokog nivoa
+kroz tri medjureprezentacije, reprezentacija visokog nivoa, tipizirana reprezentacija visokog nivoa
 i reprezentacija srednjeg nivoa. Bitan deo semantičke analize jeste provera tipova gde kompajler proverava 
 da li svaki operator ima operande koji se poklapaju. U drugim jezicima često je postojanje implicitnih 
 konverzija jednog tipa u drugi, ova funkcionalnost nije postojana u \verb|Rust| jeziku. Svaka konverzija 
 mora biti eksplicitno navedena od strane korisnika.
 
-U tipično struktuiranom kompajleru svaka od prethodno navedenih medju reprezentacija koda predstavlja 
+U tipično struktuiranom kompajleru svaka od prethodno navedenih medjureprezentacija koda predstavlja 
 poseban program i zasebno izvršavanje. Ovakvi kompajleri se nazivaju 
 kompajleri zasnovani na prolascima. \verb|Rust|-ov kompajler je u tranziciji izmedju 
 kompajlera zanovanog na prolascima i kompajlera zasnovanog na potražnji. Kompajler 
