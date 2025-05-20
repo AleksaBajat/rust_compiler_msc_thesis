@@ -1,15 +1,15 @@
-\subsection{Apstraktno Sintaksno Stablo}
+\subsection{Апстрактно синтаксно стабло}
 
-Parser jezika Rust uz pomoć toka tokena iz leksera generiše apstraktno sintaksno stablo (AST). 
-Prilikom poziva parsiranja, jedini fajl koji se odmah procesira jeste glavni \verb|main| fajl, potpuno stablo
-nastaje putem ekspanzije i rezolucije imena.
-Algoritam \verb|recursive-descent| se koristi tokom procesa parsiranja. Ovo je jedna od najjednostavnijih
-tehnika parsiranja koja se koristi u praksi. Ovakvi parseri se takodje nazivaju \verb|top-down| parseri 
-jer konstruišu stablo od gore ka dole \cite{parsing}. 
+Парсер језика \verb|Rust| уз помоћ тока токена из лексера генерише апстрактно синтаксно стабло (АСТ). 
+Приликом позива парсирања, једини фајл који се одмах процесира јесте главни \verb|main| фајл, потпуно стабло
+настаје путем експанзије и резолуције имена.
+Алгоритам \verb|recursive-descent| се користи током процеса парсирања. Ово је једна од најједноставнијих
+техника парсирања која се користи у пракси. Овакви парсери се такође називају \verb|top-down| парсери 
+јер конструишу стабло од горе ка доле \cite{parsing}. 
 
-Parser koristi prethodno pomenuti tok tokena da bi kreirao kursor nad stablom tokena \verb|TokenTreeCursor|.
-\verb|TokenStream| poseduje implementaciju \verb|into_tree| koji transformiše tip dobijen iz leksera
-u tip pogodan parseru.
+Парсер користи претходно поменути ток токена да би креирао курсор над стаблом токена \verb|TokenTreeCursor|.
+\verb|TokenStream| поседује имплементацију \verb|into_tree| који трансформише тип добијен из лексера
+у тип погодан парсеру.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -24,12 +24,13 @@ impl TokenTreeCursor {
     ...
 }
 \end{minted}
-\caption{Konverzija iz "TokenStream" u "TokenTreeCursor"}
+\caption{Конверзија из "TokenStream" у "TokenTreeCursor"}
 \end{listing}
-Jednostavnije je iterirati kroz stabla tokena sekvencijalno u odnosu na strukturu koja liči na kanape.
 
-Za razliku od leksera, parser poseduje konstrukte koji su dosta složeniji od jednog tokena, kao što su 
-strukture, enumeracije i slično (reč-rečenica poredjenje). Izvorni čvor \verb|AST|-a je \verb|Crate|.
+Једноставније је итерирати кроз стабла токена секвенцијално у односу на структуру која личи на канапе.
+
+За разлику од лексера, парсер поседује конструкте који су доста сложенији од једног токена, као што су 
+структуре, енумерације и слично (реч-реченица поређење). Изворни чвор \verb|AST|-а је \verb|Crate|.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -42,27 +43,22 @@ pub struct Crate {
     pub is_placeholder: bool,
 }
 \end{minted}
-\caption{Definicija "Crate" strukture}
+\caption{Дефиниција "Crate" структуре}
 \end{listing}
 
-\newpage
+Најбитнија поља су атрибути (\verb|attrs|) и ставке (\verb|items|). Атрибути могу бити спољашњи или унутрашњи.
+Користе се да би корисник пружио додатне инструкције компајлеру. 
+Додатне инструкције могу бити тривијалне попут дозвољавања
+некоришћеног кода, али могу бити и комплексније у виду имплементације особина 
+(\verb|trait|). Особина је функционалност веома слична интерфејсу у другим језицима. 
 
-Najbitnija polja su atributi (\verb|attrs|) i stavke (\verb|items|). Atributi mogu biti spoljašnji ili unutrašnji.
-Koriste se da bi korisnik pružio dodatne instrukcije kompajleru. 
-Dodatne instrukcije mogu biti trivijalne poput dozvoljavanja
-nekorišćenog koda, ali mogu biti i kompleksnije u vidu implementacije osobina 
-(\verb|trait|). Osobina je funkcionalnost veoma slična interfejsu u drugim jezicima. 
-
-
-
-
-Stavke su grupacije tokena iz leksera koje tako grupisane imaju semantiku. Iz perspektive koda 
-veoma se malo razlikuje od samog \verb|Crate|-a. Svaka stavka poseduje identifikator \verb|NodeId| 
-koji predstavlja sekvencijalni broj stavke unutar \verb|Crate|-a. Ovo znači da ukoliko se usred stabla 
-obriše ili izgeneriše nova stavka, svaki čvor nakon tog dela stabla mora ponovo da izgeneriše svoj redni broj.
-Samim time apstraktno sintaksno stablo nije korisno prilikom inkrementalne kompilacije jer su identifikatori
-volotilni. Svaka stavka takodje sadrži \verb|Span|. Ovo je tip koji odredjuje početnu i krajnju poziciju 
-stavke unutar izvornog koda. U odnosu na vrednost tipa \verb|kind|, stavke mogu ili ne mogu da poseduju atribute. 
+Ставке су групације токена из лексера које тако груписане имају семантику. Из перспективе кода 
+веома се мало разликује од самог \verb|Crate|-а. Свака ставка поседује идентификатор \verb|NodeId| 
+који представља секвенцијални број ставке унутар \verb|Crate|-а. Ово значи да уколико се усред стабла 
+обрише или изгенерише нова ставка, сваки чвор након тог дела стабла мора поново да изгенерише свој редни број.
+Самим тиме апстрактно синтаксно стабло није корисно приликом инкременталне компилације јер су идентификатори
+волотилни. Свака ставка такође садржи \verb|Span|. Ово је тип који одређује почетну и крајњу позицију 
+ставке унутар изворног кода. У односу на вредност типа \verb|kind|, ставке могу или не могу да поседују атрибуте. 
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -77,7 +73,7 @@ pub struct Item<K = ItemKind> {
     pub tokens: Option<LazyAttrTokenStream>,
 }
 \end{minted}
-\caption{Definicija "Item" strukture}
+\caption{Дефинциија "Item" структуре}
 \end{listing}
 
 \begin{listing}[H]
@@ -88,12 +84,12 @@ pub fn parse_crate_mod(&mut self) -> PResult<'a, ast::Crate> {
        id: DUMMY_NODE_ID, is_placeholder: false })
 }
 \end{minted}
-\caption{Ulazna funkcija parsera}
+\caption{Улазна функција парсера}
 \end{listing}
 
 
-Rezolucija imena je jedan od delova formiranja apstraktnog sintaksnog stabla.
-U programima se referenciraju funkcije, varijable i tipovi na osnovu imena. Ova imena nisu uvek jedinstvena.
+Резолуција имена је један од делова формирања апстрактног синтаксног стабла.
+У програмима се референцирају функције, варијабле и типови на основу имена. Ова имена нису увек јединствена.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -101,29 +97,30 @@ type a = u32;
 let a: a = 1;
 let b: a = 5; 
 \end{minted}
-\caption{Rezolucija imena}
+\caption{Резолуција имена}
 \label{lst:resolution}
 \end{listing}
 
-Kako znamo, u izvornom kodu \ref{lst:resolution}, da li je u liniji 3 "a" tip ili vrednost 1?
-Ovakvi konflikti se rešavaju prilikom rezolucije imena. U datom slučaju imena tipova i promenljivih se nalaze 
-u različitim imenskim prostorima (\verb|namespaces|) i zbog toga mogu da koegzistiraju.
-Rezolucija imena se izvodi iz dva faze. Prva faza se dešava za vreme ekspanzije (više o tome u daljem tekstu) 
-gde se obradjuju samo \verb|import|-i. Druga faza se dešava nakon ekspanzije gde se obradjuje celokupno 
-sintaksno stablo počevši od vrha pa na dole. 
+Како знамо, у изворном коду \ref{lst:resolution}, да ли је у линији 3 "а" тип или вредност 1?
+Овакви конфликти се решавају приликом резолуције имена. У датом случају имена типова и променљивих се налазе 
+у различитим именским просторима (\verb|namespaces|) и због тога могу да коегзистирају.
+Резолуција имена се изводи из два фазе. Прва фаза се дешава за време експанзије (више о томе у даљем тексту) 
+где се обрађују само \verb|import|-и. Друга фаза се дешава након експанзије где се обрађује целокупно 
+синтаксно стабло почевши од врха па на доле. 
 
-Imena su validna u različitim delovima izvornog koda. Da bi se 
-vreme života (\verb|scope|) nekog imena proverilo uvodi se koncept rebara (\verb|rib|). Svaki put kada se 
-set vidljivih imena potencijalno menja novo rebro se gura na stek. Primeri situacija u kojima se dodaje 
-novo rebro:
+Имена су валидна у различитим деловима изворног кода. Да би се 
+време живота (\verb|scope|) неког имена проверило уводи се концепт ребара (\verb|rib|). Сваки пут када се 
+сет видљивих имена потенцијално мења ново ребро се гура на стек. Примери ситуација у којима се додаје 
+ново ребро:
+
 \begin{enumerate}
-    \item Očigledna mesta kao što su vitičaste zagrade, funkcije, moduli.
-    \item Prilikom poziva \verb|let| jer se ime može redefinisati (\verb|shadowing|).
-    \item Početak proširenja makroa. 
+    \item Очигледна места као што су витичасте заграде, функције, модули.
+    \item Приликом позива \verb|let| јер се име може редефинисати (\verb|shadowing|).
+    \item Почетак проширења макроа. 
 \end{enumerate}
-Potraga za imenom se izvodi od najdubljeg rebra (vrh steka) ka najplićem. 
-Redosled je veoma bitan zato što se ovakvom pretragom izbegava greška 
-ukoliko je neko ime redefinisano.
+Потрага за именом се изводи од најдубљег ребра (врх стека) ка најплићем. 
+Редослед је веома битан зато што се оваквом претрагом избегава грешка 
+уколико је неко име редефинисано.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -134,19 +131,19 @@ let a: i32 = -1;
 \label{lst:shadowing}
 \end{listing}
 
-Jezici kao što je C pored kompajlera sadrže pre-procesor koji prikuplja izvorni kod. 
-Prilikom prikupljanja izvornog koda skraćenice (makroi) se proširuju na izraze programskog jezika. 
-Rust se odlikuje veoma moćnim makroima ali ne poseduje pre-procesor. Transformacija skraćenica se vrši 
-putem ekspanzije.  Ekspanzija je proces tokom kog se dopunjuje apstraktno sintaksno stablo
-proširivnajem makroa i umetanjem modula (\verb|inlining|). Prilikom parsiranja umesto 
-modula i makroa se postavljaju AST fragmenti. Ovi fragmenti su početne tačke algoritma ekspanzije.
-Kreira se red čekanja neproširenih makroa. Jedan po jedan se uzimaju iz reda čekanja, vriši se rezolucija imena,
-proširuju se i integrišu nazad u stablo. U slučaju da se nema napretka (loše napisan kod), vraća se greška.
+Језици као што је \verb|C| поред компајлера садрже препроцесор који прикупља изворни код. 
+Приликом прикупљања изворног кода скраћенице (макрои) се проширују на изразе програмског језика. 
+\verb|Rust| се одликује веома моћним макроима али не поседује препроцесор. Трансформација скраћеница се врши 
+путем експанзије.  Експанзија је процес током ког се допуњује апстрактно синтаксно стабло
+проширивнајем макроа и уметањем модула (\verb|inlining|). Приликом парсирања уместо 
+модула и макроа се постављају АСТ фрагменти. Ови фрагменти су почетне тачке алгоритма експанзије.
+Креира се ред чекања непроширених макроа. Један по један се узимају из реда чекања, вриши се резолуција имена,
+проширују се и интегришу назад у стабло. У случају да се нема напретка (лоше написан код), враћа се грешка.
 
-Pre nego što počne prelazak u sledeći posredni oblik AST stablo se validira. 
-Tokom prolaska se proverava da li je stablo sintaktički validno, bez ikakvih kompleksnih analiza,
-rezolucije imena ili provera tipova. Ovo nije moguće učiniti prilikom parsiranja jer makro atributi 
-omogućavaju odredjene delove netačne sintakse kao što je funkcija bez tela van definicije osobine (\verb|trait|) \ref{lst:validate}.
+Пре него што почне прелазак у следећи посредни облик АСТ стабло се валидира. 
+Током проласка се проверава да ли је стабло синтактички валидно, без икаквих комплексних анализа,
+резолуције имена или провера типова. Ово није могуће учинити приликом парсирања јер макро атрибути 
+омогућавају одређене делове нетачне синтаксе као што је функција без тела ван дефиниције особине (\verb|trait|) \ref{lst:validate}.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -163,18 +160,18 @@ fn main() {
     missing_body();
 }
 \end{minted}
-\caption{Dodavanje tela funkcije uz pomoć makroa}
+\caption{Додавање тела функције уз помоћ макроа}
 \label{lst:validate}
 \end{listing}
 
-Apstraktno sintaksno stablo pre i posle ekspanzije nekog \verb|Crate|-a se može analizirati pomoću 
-nestabilnih \verb|-Z| zastavica \ref{lst:rustc_ast}.
+Апстрактно синтаксно стабло пре и после експанзије неког \verb|Crate|-а се може анализирати помоћу 
+нестабилних \verb|-Z| заставица \ref{lst:rustc_ast}.
 
 \begin{listing}[H]
 \begin{minted}{bash}
 cargo rustc -- -Z unpretty=ast
 cargo rustc -- -Z unpretty=ast,expanded
 \end{minted}
-\caption{"Prikaz apstraktnog sintaksnog stabla"}
+\caption{Приказ апстрактног синтаксног стабла}
 \label{lst:rustc_ast}
 \end{listing}

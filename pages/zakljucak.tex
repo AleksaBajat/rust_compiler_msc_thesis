@@ -1,20 +1,20 @@
-\section{Zaključak}
+\section{Закључак}
 
-Ovaj master rad pružio je uvid u arhitekturu Rust kompajlera, sa posebnim fokusom na ključnu ulogu koju igraju međureprezentacije izvornog koda u procesu prevođenja. 
-Počevši od osnova Rust jezika, njegovog ekosistema sa alatom Cargo, i oslanjanja na LLVM projekat za generisanje optimizovanog mašinskog koda, 
-analiziran je sam proces kompajliranja.
+Овај мастер рад пружио је увид у архитектуру \verb|Rust| компајлера, са посебним фокусом на кључну улогу коју играју међурепрезентације изворног кода у процесу превођења. 
+Почевши од основа \verb|Rust| језика, његовог екосистема са алатом \verb|Cargo|, и ослањања на ЛЛВМ пројекат за генерисање оптимизованог машинског кода, 
+анализиран је сам процес компајлирања.
 
-Centralni deo rada detaljno je istražio putanju koda kroz seriju međureprezentacija. 
-Pokazano je kako se od inicijalnog toka tokena i ASS-a, preko MVN-a koji vrši pojednostavljenje sintakse i predstavlja platformu za prelazak sa \verb|pipeline|
-kompajlerske arhitekture na arhitekturu zasnovanu na upitima, dolazi do TMVN-a gde se integrišu informacije o tipovima ključne za bezbednost 
-i analizu šablona.
+Централни део рада детаљно је истражио путању кода кроз серију међурепрезентација. 
+Показано је како се од иницијалног тока токена и АСС-а, преко МВН-а који врши поједностављење синтаксе и представља платформу за прелазак са \verb|pipeline|
+компајлерске архитектуре на архитектуру засновану на упитима, долази до ТМВН-а где се интегришу информације о типовима кључне за безбедност 
+и анализу шаблона.
 
-Posebna pažnja posvećena je međureprezentaciji srednjeg nivoa (MSN). Naglašena je njena uloga kao eksplicitnog grafa kontrole toka,
-što je čini fundamentalnom za implementaciju Rust-ovih garancija memorijske bezbednosti kroz proveru pozajmljivanja i neleksičke životne vekove.
-Takođe, MSN služi kao osnova za važne Rust-specifične optimizacije, pre nego što se dalja optimizacija i generisanje koda prepuste LLVM-u.
+Посебна пажња посвећена је међурепрезентацији средњег нивоа (МСН). Наглашена је њена улога као експлицитног графа контроле тока,
+што је чини фундаменталном за имплементацију \verb|Rust|-ових гаранција меморијске безбедности кроз проверу позајмљивања и нелексичке животне векове.
+Такође, МСН служи као основа за важне \verb|Rust|-специфичне оптимизације, пре него што се даља оптимизација и генерисање кода препусте ЛЛВМ-у.
 
-Kroz ovu analizu, demonstrirano je da višefazni pristup sa pažljivo dizajniranim međureprezentacijama nije samo tehnički detalj,
-već suštinski mehanizam koji omogućava Rustu da istovremeno postigne svoje glavne ciljeve: memorijsku bezbednost bez sakupljača smeća,
-visoke performanse koje pariraju C/C++-u, i izražajnost jezika sa modernim karakteristikama. Složenost kompajlera je efikasno modularizovana,
-omogućavajući rigorozne provere i optimizacije na najpogodnijem nivou apstrakcije. Razumevanje ovih internih faza ključno je za dalje unapređenje kompajlera,
-razvoj alata za analizu koda i dublje shvatanje samog jezika Rust.
+Кроз ову анализу, демонстрирано је да вишефазни приступ са пажљиво дизајнираним међурепрезентацијама није само технички детаљ,
+већ суштински механизам који омогућава \verb|Rust|у да истовремено постигне своје главне циљеве: меморијску безбедност без сакупљача смећа,
+високе перформансе које парирају \verb|C|/|verb|C++|-у, и изражајност језика са модерним карактеристикама. Сложеност компајлера је ефикасно модуларизована,
+омогућавајући ригорозне провере и оптимизације на најпогоднијем нивоу апстракције. Разумевање ових интерних фаза кључно је за даље унапређење компајлера,
+развој алата за анализу кода и дубље схватање самог језика \verb|Rust|.  

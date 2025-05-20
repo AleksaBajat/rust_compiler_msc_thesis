@@ -1,77 +1,77 @@
-\section{Uvod}
+\section{Увод}
 
-Prilikom razvoja operativnih sistema, drajvera, bootloader-a i drugih kritičnih sistemskih softvera, koriste se jezici niskog nivoa kao što su C i C++.
-Tokom godina Microsoft je uvideo da je preko 70\% bezbednosnih slabosti nastalo neadekvatnim rukovanjem memorijom [1]. Najčešći primeri su korišćenje memorije 
-nakon oslobadjanja, višestruko oslobadjanje iste memorijske lokacije, nebezbedna aritemetika pokazivačima, curenje memorije i prepopunjavanje bafera.
-Takođe sa stanovišta paralelnog programiranja, oba jezika zahtevaju pedantno rukovanje muteksima i semaforima jer u suprotnom nastaju novi problemi poput 
-problema trke i problema medjusobnog čekanja. Problem trke nastaje kada dve ili više niti pokušavaju da izmene podatak istovremeno, pri čemu redosled izvršavanja 
-utiče na ishod. Problem medjusobnog čekanja nastaje kada dve ili više niti čekaju jednu na drugu da oslobode resurse pri čemu se izvršavanje 
-zaustavlja.
+Приликом развоја оперативних система, драјвера, \verb|bootloader|-а и других критичних системских софтвера, користе се језици ниског нивоа као што су \verb|C| и \verb|C++|.
+Током година \verb|Microsoft| је увидео да је преко 70\% безбедносних слабости настало неадекватним руковањем меморијом \cite{msrc}. Најчешћи примери су коришћење меморије 
+након ослобађања, вишеструко ослобађање исте меморијске локације, небезбедна аритеметика показивачима, цурење меморије и препопуњавање бафера.
+Такође са становишта паралелног програмирања, оба језика захтевају педантно руковање мутексима и семафорима јер у супротном настају нови проблеми попут 
+проблема трке и проблема међусобног чекања. Проблем трке настаје када две или више нити покушавају да измене податак истовремено, при чему редослед извршавања 
+утиче на исход. Проблем међусобног чекања настаје када две или више нити чекају једну на другу да ослободе ресурсе при чему се извршавање 
+зауставља.
 
-Programski jezik C nema ugrađene odbrambene mehanizme od prethodno navedenih problema. Pridržavanje C standardu otvara mogućnost za uporedo 
-korišćenje GCC i Clang kompajlera čime se dobija uvid u relativno štura upozorenja od strane oba programska prevodioca.
-Sa druge strane programski jezik C++ uprkos dodavanju primitiva kao što su \verb|unique_ptr|, \verb|shared_ptr| i \verb|weak_ptr|, i dalje zbog interoperabilnosti 
-sa starijim standardima ili bibliotekama zahteva korišćenje sirovih pokazivača. Vremenom su se razvili softverski obrasci kao što je \verb|Scope-bound Resource Management|
-koje nastoji da dobrim praksama umanji šansu da se problem prvobitno desi. Naime, korisnik jezika nije primoran da softverski obrazac upotrebi ili čak zna 
-za njegovo postojanje.
+Програмски језик \verb|C| нема уграђене одбрамбене механизме од претходно наведених проблема. Придржавање \verb|C| стандарду отвара могућност за упоредо 
+коришћење \verb|GCC| и \verb|Clang| компајлера чиме се добија увид у релативно штура упозорења од стране оба програмска преводиоца.
+Са друге стране програмски језик \verb|C++| упркос додавању примитива као што су \verb|unique_ptr|, \\ \verb|shared_ptr| и \verb|weak_ptr|, и даље због интероперабилности 
+са старијим стандардима или библиотекама захтева коришћење сирових показивача. Временом су се развили софтверски обрасци као што је \verb|scope|-\verb|bound| \verb|resource| \verb|management|
+које настоји да добрим праксама умањи шансу да се проблем првобитно деси. Наиме, корисник језика није приморан да софтверски образац употреби или чак зна 
+за његово постојање.
 
-Rust je programski jezik stvoren s jasnim ciljem: da reši probleme povezane sa memorijskom i paralelnom bezbednošću. 
-Njegova podrazumevana upotreba garantuje bezbednost zahvaljujući robustom sistemu tipova, inovativnom načinu upravljanja memorijom i striktnog \verb|rustc| kompajlera.
-Za razliku od C i C++ koji često daju nejasne poruke o greškama, Rust nudi izuzetno precizne dijagnostičke poruke koje tačno ukazuju na mesto 
-greške i nude potencijalna rešenja.
+\verb|Rust| је програмски језик створен са јасним циљем: да реши проблеме повезане са меморијском и паралелном безбедношћу. 
+Његова подразумевана употреба гарантује безбедност захваљујући робустом систему типова, иновативном начину управљања меморијом и стриктног \verb|rustc| компајлера.
+За разлику од \verb|C| и \verb|C++| који често дају нејасне поруке о грешкама, \verb|Rust| нуди изузетно прецизне дијагностичке поруке које тачно указују на место 
+грешке и нуде потенцијална решења.
 
-Sa obzirom na značajne inovacije koje donosi Rust jezik, detaljno razumevanje njegovog internog funkcionisanja je od velikog značaja. Rust-ove garancije 
-bezbednosti nisu magične, primarno proizilaze iz sistema pravila \verb|borrow-checker|-a, životnih vekova i osobina koje garantuju bezbednost nekog tipa 
-u paralelnom okruženju. Rust nudi mnoge napredne funkcije kao što su makroi, unsafe kod, FFI (Foreign Function Interface) za interakciju sa C kodom. Detaljno razumevanje osnova jezika i njegovog internog funkcionisanja je preduslov za efikasno korišćenje ovih naprednih 
-mogućnosti na siguran i efikasan način. Na primer, kada se koristi unsafe blok, programer preuzima odgovornost za bezbednost memorije, 
-što zahteva duboko razumevanje načina na koji Rust obično to radi.
+Са обзиром на значајне иновације које доноси \verb|Rust| језик, детаљно разумевање његовог интерног функционисања је од великог значаја. \verb|Rust|-ове гаранције 
+безбедности нису магичне, примарно произилазе из система правила \verb|borrow-checker|-а, животних векова и особина које гарантују безбедност неког типа 
+у паралелном окружењу. \verb|Rust| нуди многе напредне функције као што су макрои, небезбедан код, \verb|FFI| за интеракцију са \verb|C| кодом. Детаљно разумевање основа језика и његовог интерног функционисања је предуслов за ефикасно коришћење ових напредних 
+могућности на сигуран и ефикасан начин. На пример, када се користи \verb|unsafe| блок, програмер преузима одговорност за безбедност меморије, 
+што захтева дубоко разумевање начина на који \verb|Rust| обично то ради.
 
-Zanimljivo je da je prva verzija Rust kompajlera bila napisana u O'Caml-u, ali su sve naredne verzije razvijene u samom Rust-u. 
-Važno je napomenuti da je Rust zapravo samo frontend za LLVM. LLVM predstavlja skup modularnih i višekratno upotrebljivih tehnologija za izgradnju kompajlera. 
-Rust se u potpunosti oslanja na LLVM za generisanje mašinskog koda, dok je kompletan frontend Rust-a napisan od nule.
+Занимљиво је да је прва верзија \verb|Rust| компајлера била написана у \verb|O'Caml|-у, али су све наредне верзије развијене у самом \verb|Rust|-у. 
+Важно је напоменути да је \verb|Rust| заправо само фронтенд за \verb|LLVM|. \verb|LLVM| представља скуп модуларних и вишекратно употребљивих технологија за изградњу компајлера. 
+\verb|Rust| се у потпуности ослања на \verb|LLVM| за генерисање машинског кода, док је комплетан фронтенд \verb|Rust|-а написан од нуле.
 
-Medjureprezentacije izvornog koda u Rust-u obuhvataju različite prikaze korisničkog koda koji omogu\hyp{}ćavaju ključne funkcionalnosti jezika, 
-uključujući proveru tipova, dijagnostiku grešaka, automatsku dealo\hyp{}kaciju memorije i druge ergonomske i funkcionalne karakteristike.
+Међурепрезентације изворног кода у \verb|Rust|-у обухватају различите приказе корисничког кода који омогућавају кључне функционалности језика, 
+укључујући проверу типова, дијагностику грешака, аутоматску деалокацију меморије и друге ергономске и функционалне карактеристике.
 
 \newpage
 
-\section{Pozadina}
+\section{Позадина}
 
-U ovoj sekciji obradjuje se pozadina iza \verb|Rust| jezika, zvaničnog menadžera paketa \verb|Cargo| i 
-LLVM seta alata.
+У овој секцији обрађује се позадина иза \verb|Rust| језика, званичног менаџера пакета \verb|Cargo| и 
+\verb|LLVM| сета алата.
 
-\subsection{Rust jezik}
+\subsection{Rust језик}
 
-\verb|Rust| je statički tipiziran jezik koji je nastao 2006. godine kao lični projekat \verb|Graydon| \verb|Hoare|-a, radnika kompanije 
-Mozilla. Uvidevši potencijal jezika, Mozila je započela sponzorisanje projekta 2010. godine kada je jezik i javno 
-predstavljen \cite{rust-language}. \verb|Rust| je jezik niskog nivoa koji se fokusira na memorijsku bezbednost
-i bezbedan paralelizam bez oslanjanja na skupljač smeća (\verb|garbage| \verb|collector|). Skupljač smeća 
-obično uvodi lakoću programiranja na uštrb nedeterminističkih performansi usled oslobadjanja memorije 
-sa \verb|heap|-a, na memorijskim lokacijama gde je brojač referenci na nuli. U jezicima bez skupljača 
-smeća obično postoji odredba koja se poziva da bi se dinamički alocirana memorija oslobodila. \verb|Rust|
-jezik uvodi sasvim novi koncept u domen programskih jezika, pozajmljivač (\verb|borrow| \verb|checker|).
-Pozajmljivač se zasniva na striktnoj primeni menadžmenta resursa u opsegu (\verb|scope-bound| \verb|resource| \verb|management|) 
-od strane kompajlera. Ovo je softverski obrazac koji je preporučljivo koristiti u nebezbednim jezicima 
-niskog nivoa. Naime u prirodi softverskog obrasca jeste da ga nije moguće primorati, osim ako nije direktno
-integrisan u jezik kao što je slučaj sa jezikom \verb|Rust|. Ključan koncept koji se uvodi uz pozajmljivač 
-jeste vlasništvo. Vlasništvo predstavlja dužnost da opseg koji direktno manipuliše memorijom (pristup memoriji nije 
-pridobijen referencom) tu memoriju na kraju opsega oslobodi. 
+\verb|Rust| је статички типизиран језик који је настао 2006. године као лични пројекат \verb|Graydon| \verb|Hoare|-а, радника компаније 
+\verb|Mozilla|. Увидевши потенцијал језика, \verb|Mozilla| је започела спонзорисање пројекта 2010. године када је језик и јавно 
+представљен \cite{rust-language}. \verb|Rust| је језик ниског нивоа који се фокусира на меморијску безбедност
+и безбедан паралелизам без ослањања на скупљач смећа (\verb|garbage| \verb|collector|). Скупљач смећа 
+обично уводи лакоћу програмирања на уштрб недетерминистичких перформанси услед ослобађања меморије 
+са \verb|heap|-а, на меморијским локацијама где је бројач референци на нули. У језицима без скупљача 
+смећа обично постоји одредба која се позива да би се динамички алоцирана меморија ослободила. \verb|Rust|
+језик уводи сасвим нови концепт у домен програмских језика, позајмљивач (\verb|borrow| \verb|checker|).
+Позајмљивач се заснива на стриктној примени менаџмента ресурса у опсегу (\verb|scope-bound| \verb|resource| \verb|management|) 
+од стране компајлера. Ово је софтверски образац који је препоручљиво користити у небезбедним језицима 
+ниског нивоа. Наиме у природи софтверског обрасца јесте да га није могуће приморати, осим ако није директно
+интегрисан у језик као што је случај са језиком \verb|Rust|. Кључан концепт који се уводи уз позајмљивач 
+јесте власништво. Власништво представља дужност да опсег који директно манипулише меморијом (приступ меморији није 
+придобијен референцом) ту меморију на крају опсега ослободи. 
 
-U jeziku \verb|C| postoje dva načina deljenja 
-memorije: preko vrednosti i preko reference (pokazivača). Deljenje preko vrednosti (kopija) je
-podrazumevano. U \verb|Rust|-u deljenje preko vrednosti nije podrazu\hyp{}mevano ponašanje, već je osnovna akcija prenos vlasništva.
-Deljenje preko vrednosti se može simulirati kloniranjem (funkcija \verb|clone|) koju prati prenos vlasništva.
-Opseg u kome je memorija dodeljena varijabli validna 
-se naziva životni vek. Vlasništvo onemogućuje brojne greške kao što su korišćenje nakon oslobadjanja i curenje 
-memorije tj. aktivno vrši zabranu nedefinisanih stanja. Program se ne kompajlira uspešno ukoliko pravila 
-vlasništva nisu zadovoljena. Izvorni kod \ref{lst:use_after_free_c} predstavlja C kod koji koristi memoriju 
-nakon oslobadjanja. Uspešno se kompajlira ali prilikom izvršavanja vraća grešku. Sa druge strane u izvornom 
-kodu \ref{lst:user_after_free_rust} predstavljen je isti koncept u \verb|Rust| jeziku. Funkcija 
-\verb|drop| preuzmima vlasništvo nad memorijom 
-i oslobadja je, simulirajući kraj opsega. Izvorni kod \ref{lst:user_after_free_rust} se neće 
-uspešno kompajlirati jer se vrši pokušaj manipulacijom memorije nad varijablom kojoj je prošao životni vek.
-Ujedno je demonstrirano da korisnik \verb|Rust| jezika ne mora da se stara o životnom veku varijable, isključujući
-curenje memorije kao opcije.
+У језику \verb|C| постоје два начина дељења 
+меморије: преко вредности и преко референце (показивача). Дељење преко вредности (копија) је
+подразумевано. У \verb|Rust|-у дељење преко вредности није подразумевано понашање, већ је основна акција пренос власништва.
+Дељење преко вредности се може симулирати клонирањем (функција \verb|clone|) коју прати пренос власништва.
+Опсег у коме је меморија додељена варијабли валидна 
+се назива животни век. Власништво онемогућује бројне грешке као што су коришћење након ослобађања и цурење 
+меморије тј. активно врши забрану недефинисаних стања. Програм се не компајлира успешно уколико правила 
+власништва нису задовољена. Изворни код \ref{lst:use_after_free_c} представља \verb|C| код који користи меморију 
+након ослобађања. Успешно се компајлира али приликом извршавања враћа грешку. Са друге стране у изворном 
+коду \ref{lst:user_after_free_rust} представљен је исти концепт у \verb|Rust| језику. Функција 
+\verb|drop| преузмима власништво над меморијом 
+и ослобађа је, симулирајући крај опсега. Изворни код \ref{lst:user_after_free_rust} се неће 
+успешно компајлирати јер се врши покушај манипулацијом меморије над варијаблом којој је прошао животни век.
+Уједно је демонстрирано да корисник \verb|Rust| језика не мора да се стара о животном веку варијабле, искључујући
+цурење меморије као опције.
 
 \begin{multicols}{2}
     \begin{listing}[H]
@@ -82,7 +82,7 @@ pointer = NULL;
 free(pointer);
 *pointer = 6; 
     \end{minted}
-    \caption{Korišćenje nakon oslobadjanja - C}
+    \caption{Коришћење након ослобађања - C}
     \label{lst:use_after_free_c}
     \end{listing}
     \columnbreak
@@ -92,35 +92,35 @@ let mut a: Box<i32> = Box::new(5);
 drop(a);
 *a = 6;
     \end{minted}
-    \caption{Korišćenje nakon oslobadjanja - Rust}
+    \caption{Коришћење након ослобађања - Rust}
     \label{lst:user_after_free_rust}
     \end{listing}
 \end{multicols}
 
-U jeziku \verb|C++|, dobra praksa je pravilno označavati nepromenljivost reference ili vrednosti
-unutar funkcija korišćenjem ključne reči \verb|const|, obaveštavajući budućeg korisnika funkcije 
-o promenljivosti. U jeziku \verb|Rust|, promenljivost mora da se naznači eksplicitno upotrebom ključne 
-reči \verb|mut|. Inverzija principa je omogućila daleko bolju čitljivost i razumevanje koda.
+У језику \verb|C++|, добра пракса је правилно означавати непроменљивост референце или вредности
+унутар функција коришћењем кључне речи \verb|const|, обавештавајући будућег корисника функције 
+о променљивости. У језику \verb|Rust|, променљивост мора да се назначи експлицитно употребом кључне 
+речи \verb|mut|. Инверзија принципа је омогућила далеко бољу читљивост и разумевање кода.
 
-Bezbedni paralelizam je jedna od glavnih odlika \verb|Rust| jezika. Realizuje se pomoću osobina (\verb|trait|)
-i vlasništva. Osobine su ugovor koji se postavlja nad strukturom i po funkcionalnosti liče na interfejse
-u drugim jezicima. Glavna razlika je u fleksibilnosti. Osobine mogu da se implementiraju nad tipovima
-koje nismo mi definisali, na primer iz drugih biblioteka. Razlog tome jeste baš u ključnoj reči ugovor.
-Ako struktura zadovoljava ugovor koji osobina nalaže (obično ispunjenje drugih osobina ili
-metoda) onda je osobina primenljiva nad strukturom. Ključne osobine koje realizuju bezbednost podataka
-u paralelnom okruženju jesu \verb|Sync| i \verb|Send|. Tip je \verb|Send| ako je bezbedno poslati ga 
-u drugu nit. Tip je \verb|Sync| ako ga je bezbedno deliti izmedju niti. Tipovi sačinjeni od drugih tipova koji
-implementiraju \verb|Sync| i/ili \verb|Send| su automatski \verb|Sync| i/ili \verb|Send|. Skoro sve primitive
-unutar \verb|Rust| jezika su \verb|Send| i \verb|Sync|. U bitnije izuzetke spadaju sirovi pokazivači jer nemaju
-bezbednosne garancije, \verb|UnsafeCell| (samim time i \verb|Cell| i \verb|RefCell|) jer implementiraju
-unutrašnju mutabilnost čime je tip rizik u vidu štetnog preplitanja, kao i \verb|Rc| (brojač referenci) 
-jer je broj referenci deljen i nesinhronizovan. Uz \verb|std::marker|, \verb|Sync| i \verb|Send| su jedine osobine koje su 
-deo samog kompajlera, a ne standardne biblioteke.
+Безбедни паралелизам је једна од главних одлика \verb|Rust| језика. Реализује се помоћу особина (\verb|trait|)
+и власништва. Особине су уговор који се поставља над структуром и по функционалности личе на интерфејсе
+у другим језицима. Главна разлика је у флексибилности. Особине могу да се имплементирају над типовима
+које нисмо ми дефинисали, на пример из других библиотека. Разлог томе јесте баш у кључној речи уговор.
+Ако структура задовољава уговор који особина налаже (обично испуњење других особина или
+метода) онда је особина применљива над структуром. Кључне особине које реализују безбедност података
+у паралелном окружењу јесу \verb|Sync| и \verb|Send|. Тип је \verb|Send| ако је безбедно послати га 
+у другу нит. Тип је \verb|Sync| ако га је безбедно делити између нити. Типови сачињени од других типова који
+имплементирају \verb|Sync| и/или \verb|Send| су аутоматски \verb|Sync| и/или \verb|Send|. Скоро све примитиве
+унутар \verb|Rust| језика су \verb|Send| и \verb|Sync|. У битније изузетке спадају сирови показивачи јер немају
+безбедносне гаранције, \verb|UnsafeCell| (самим тиме и \verb|Cell| и \verb|RefCell|) јер имплементирају
+унутрашњу мутабилност чиме је тип ризик у виду штетног преплитања, као и \verb|Rc| (бројач референци) 
+јер је број референци дељен и несинхронизован. Уз \verb|std::marker|, \verb|Sync| и \verb|Send| су једине особине које су 
+део самог компајлера, а не стандардне библиотеке.
 
-Atributi su zaglavlja koja pružaju dodatne informacije kompajleru. Atributi mogu biti spoljašnji ili 
-unutrašnji \ref{lst:attributes}. Primenjuju se na brojne konstrukte unutar jezika kao što su eksterni blokovi,
-funkcije, moduli i enumeracije. Atributi generišu kod, isključuju ili uključuju dijagnostiku, 
-postavljaju limitacije i udeluju u testiranju. 
+Атрибути су заглавља која пружају додатне информације компајлеру. Атрибути могу бити спољашњи или 
+унутрашњи \ref{lst:attributes}. Примењују се на бројне конструкте унутар језика као што су екстерни блокови,
+функције, модули и енумерације. Атрибути генеришу код, искључују или укључују дијагностику, 
+постављају лимитације и уделују у тестирању. 
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -134,140 +134,140 @@ fn main() {
     let x = 10;  
 }
 \end{minted}
-\caption{Spoljašnji i unutrašnji atributi}
+\caption{Спољашњи и унутрашњи атрибути}
 \label{lst:attributes}
 \end{listing}
 
-Makro sistem je jedan od najmoćnijih delova \verb|Rust| jezika. Makroi su kod koji generiše drugi kod i ovaj 
-način programiranja se naziva metaprogramiranje. 
-Korisni su da bi se smanjila količina koda koja mora da se održava, ali i da bi se izbeglo višestruko pisanje 
-veoma sličnog koda (\verb|boilerplate|). Postoji četiri vrste makroa: deklarativni, funkcijski, proceduralni i atributski. 
-Deklarativni i funkcijski su slični po prirodi, pozivaju se nalik običnim funkcijama ali u imenovanju imaju sufiks "!".
-Deklarativni makroi moraju deterministički navesti broj parametara, dok funkcijski imaju proizvoljan broj parametara.
-Jedan od najčešće korišćenih deklarativnih makroa jeste \verb|vec!| koji služi da smanji broj linija koda da bi se 
-inicijalizovao vektor. Sa druge strane funkcijski makroi mogu da se koriste da bi se pisala sintaksa nekog drugog jezika, 
-što je i česta pojava u \verb|Rust| bibliotekama koje pozivaju \verb|SQL| ili \verb|Python|.
-Proceduralni makroi su makroi koji uvoze kroz predefinisani \verb|derive| atribut, dok atributski makroi generišu sasvim 
-novi atribut. Glavna razlika izmedju njih jeste u fleksibilnosti. Proceduralni makroi rade na strukturama i enumeracijama,
-dok atributski makroi mogu biti definisani da rade i nad drugim stavkama jezika poput funkcija.
+Макро систем је један од најмоћнијих делова \verb|Rust| језика. Макрои су код који генерише други код и овај 
+начин програмирања се назива метапрограмирање. 
+Корисни су да би се смањила количина кода која мора да се одржава, али и да би се избегло вишеструко писање 
+веома сличног кода (\verb|boilerplate|). Постоји четири врсте макроа: декларативни, функцијски, процедурални и атрибутски. 
+Декларативни и функцијски су слични по природи, позивају се налик обичним функцијама али у именовању имају суфикс "!".
+Декларативни макрои морају детерминистички навести број параметара, док функцијски имају произвољан број параметара.
+Један од најчешће коришћених декларативних макроа јесте \verb|vec!| који служи да смањи број линија кода да би се 
+иницијализовао вектор. Са друге стране функцијски макрои могу да се користе да би се писала синтакса неког другог језика, 
+што је и честа појава у \verb|Rust| библиотекама које позивају \verb|SQL| или \verb|Python|.
+Процедурални макрои су макрои који увозе кроз предефинисани \verb|derive| атрибут, док атрибутски макрои генеришу сасвим 
+нови атрибут. Главна разлика између њих јесте у флексибилности. Процедурални макрои раде на структурама и енумерацијама,
+док атрибутски макрои могу бити дефинисани да раде и над другим ставкама језика попут функција.
 
-\verb|Rust| jezik se odlikuje apstrakcijama bez cene. Osobina apstrakcija bez cene označava da koncepti 
-višeg nivoa kao što su kolekcije i generički tipovi ne utiču na performanse programa prilikom njegovog izvršavanja.
-\verb|Rust| omogućava ovu karakteristiku putem monomorfizacije. Monomorfizacija je proces putem kojeg se kreira 
-kopija generičkog koda za svaki konkretan tip koji koristi generički kod tj. generički kod se pretvara u 
-negenerički kod. Naime ovaj proces povećava veličinu krajnjeg izvršnog fajla i produžava vreme kompajliranja.
-Generičke strukture mogu da imaju najveći uticaj na veličinu izvršnog fajla. Problem se amortizuje 
-tako što se ne generišu metode za konkretan tip ako ih isti ne koristi u izvornom kodu.
+\verb|Rust| језик се одликује апстракцијама без цене. Особина апстракција без цене означава да концепти 
+вишег нивоа као што су колекције и генерички типови не утичу на перформансе програма приликом његовог извршавања.
+\verb|Rust| омогућава ову карактеристику путем мономорфизације. Мономорфизација је процес путем којег се креира 
+копија генеричког кода за сваки конкретан тип који користи генерички код тј. генерички код се претвара у 
+негенерички код. Наиме овај процес повећава величину крајњег извршног фајла и продужава време компајлирања.
+Генеричке структуре могу да имају највећи утицај на величину извршног фајла. Проблем се амортизује 
+тако што се не генеришу методе за конкретан тип ако их исти не користи у изворном коду.
 
 
 \newpage
 \subsection{Cargo}
 
-U Rustu, \verb|Crate| je najmanja jedinica organizacije koda. Postoje dva osnovna tipa, izvršni programi i biblioteke.
-Izvršni programi sadrže \verb|main| funkciju i mogu da se izvršavaju. Biblioteke se ne izvršavaju i nemaju potrebu za \verb|main|
-funkcijom već pružaju funkcionalnosti koje se mogu koristiti u drugim \verb|Crate|-ovima. 
+У \verb|Rust|-у, \verb|Crate| је најмања јединица организације кода. Постоје два основна типа, извршни програми и библиотеке.
+Извршни програми садрже \verb|main| функцију и могу да се извршавају. Библиотеке се не извршавају и немају потребу за \verb|main|
+функцијом већ пружају функционалности које се могу користити у другим \verb|Crate|-овима. 
 
-Skoro svaki modreni jezik dolazi sa jednim ili više menadžera paketa (biblioteka). Zvanični menadžer paketa u \verb|Rust|
-ekosistemu se naziva \verb|Cargo|. Glavni zadatak mu je da beleži zavisnosti programa tako da je moguće rekreirati 
-program na deterministički način. Uvode se \verb|Cargo.lock| i \verb|Cargo.toml|
-fajlovi. \verb|Cargo.toml| je manifest fajl koji održava korisnik. Sastoji se meta podataka poput naziva i verzija kao i spiska paketa sa korisnički definisanim 
-verzijama (ili opsegom verzija) koji se trenutno koriste u programu. Pored verzije, paketi mogu da imaju funkcionalnosti koje korisnik mora eksplicitno da navede ukoliko su potrebni.
-\verb|Cargo.lock| se generiše nakon koraka kompajliranja ali ga je moguće izgenerisati kroz \verb|cargo| \verb|generate-lock| komandu.
-\verb|Cargo.lock| omogućava da se pri kompajliranju programa na potenicjalno različitim mašinama koriste identični paketi praćenjem tačne verzije svakog pojedinačnog paketa.
+Скоро сваки модрени језик долази са једним или више менаџера пакета (библиотека). Званични менаџер пакета у \verb|Rust|
+екосистему се назива \verb|Cargo|. Главни задатак му је да бележи зависности програма тако да је могуће рекреирати 
+програм на детерминистички начин. Уводе се \verb|Cargo.lock| и \verb|Cargo.toml|
+фајлови. \verb|Cargo.toml| је манифест фајл који одржава корисник. Састоји се мета података попут назива и верзија као и списка пакета са кориснички дефинисаним 
+верзијама (или опсегом верзија) који се тренутно користе у програму. Поред верзије, пакети могу да имају функционалности које корисник мора експлицитно да наведе уколико су потребни.
+\verb|Cargo.lock| се генерише након корака компајлирања али га је могуће изгенерисати кроз \verb|cargo| \verb|generate-lock| команду.
+\verb|Cargo.lock| омогућава да се при компајлирању програма на потеницјално различитим машинама користе идентични пакети праћењем тачне верзије сваког појединачног пакета.
 
-\verb|Cargo| dobavlja zavisnosti iz registra. Registar sadrži indeks u kome se nalazi lista dostupnih \verb|Crate|-ova. Podrazumevani javni registar je \verb|crates.io|, ali je moguće 
-konfigurisati sopstveni registar koji je proizvoljne vidljivosti. Jedan \verb|Crate| može koristiti zavisnosti iz različitih registara. Ukoliko se \verb|Crate| nalazi u registru koji nije 
-podrazumevani u \verb|Cargo.toml| fajlu se za tu zavisnost definiše \verb|registry| atribut.
+\verb|Cargo| добавља зависности из регистра. Регистар садржи индекс у коме се налази листа доступних \verb|Crate|-ова. Подразумевани јавни регистар је \verb|crates.io|, али је могуће 
+конфигурисати сопствени регистар који је произвољне видљивости. Један \verb|Crate| може користити зависности из различитих регистара. Уколико се \verb|Crate| налази у регистру који није 
+подразумевани у \verb|Cargo.toml| фајлу се за ту зависност дефинише \verb|registry| атрибут.
 
-\verb|Cargo| je otporniji od menadžera paketa iz drugih ekosistema jer nije moguće brisati verzije jednom kada je paket objavljen na javnom registru. 
-Ovaj pristup sprečava napade lanca snabdevanja kao što se desilo u \verb|JavaScript| menadžeru paketa \verb|NPM|. Paket \verb|left-pad| 
-je sačinjen od 11 linija koda koji dodaje specificiranu količinu razmaka sa leve strane niza karaktera. Iako je paket trivijalan, mnoge biblioteke koje 
-su masivno korišćene su direktno ili indirektno zavisile od njega. Problem je nastao kada je kreator \verb|left-pad| paketa obrisao 
-paket sa repozitorijuma poremetivši ogroman deo ekosistema. U softveru otvorenog koda napadi lanca snabdevanja postaju sve češći (preko 700\% povišena učestalost
-iz godine u godinu) i zbog toga regulatorne uprave rade na standardizaciji menadžera paketa ne bi li se ovakvi napadi sprečili \cite{supply-chain}.
+\verb|Cargo| је отпорнији од менаџера пакета из других екосистема јер није могуће брисати верзије једном када је пакет објављен на јавном регистру. 
+Овај приступ спречава нападе ланца снабдевања као што се десило у \verb|JavaScript| менаџеру пакета \verb|NPM|. Пакет \verb|left-pad| 
+је сачињен од 11 линија кода који додаје специфицирану количину размака са леве стране низа карактера. Иако је пакет тривијалан, многе библиотеке које 
+су масивно коришћене су директно или индиректно зависиле од њега. Проблем је настао када је креатор \verb|left-pad| пакета обрисао 
+пакет са репозиторијума пореметивши огроман део екосистема. У софтверу отвореног кода напади ланца снабдевања постају све чешћи (преко 700\% повишена учесталост
+из године у годину) и због тога регулаторне управе раде на стандардизацији менаџера пакета не би ли се овакви напади спречили \cite{supply-chain}.
 
-Nekada je \verb|Crate|-u neophodno da kompajlira ili \verb|link|-uje neki kod koji nije napisan u Rust-u, na primer C kod. Koristeći poseban fajl \verb|build.rs| u korenskom direktorijumu 
-projekta moguće je definisati skriptu koju će \verb|rustc| da kompajlira i izvrši pre kompajliranja ciljanog \verb|Crate|-a. Podrazumevano je da se skripta izvršava pred svaku kompilaciju,
-ali je moguće definisati putanju ili promenljivu okruženja prilikom čije promene će se skripta ponovo (sledeći put kada se kompajlira \verb|Crate|) izvršavati.
+Некада је \verb|Crate|-у неопходно да компајлира или \verb|link|-ује неки код који није написан у \verb|Rust|-у, на пример \verb|C| код. Користећи посебан фајл \verb|build.rs| у коренском директоријуму 
+пројекта могуће је дефинисати скрипту коју ће \verb|rustc| да компајлира и изврши пре компајлирања циљаног \verb|Crate|-а. Подразумевано је да се скрипта извршава пред сваку компилацију,
+али је могуће дефинисати путању или променљиву окружења приликом чије промене ће се скрипта поново (следећи пут када се компајлира \verb|Crate|) извршавати.
 
-\verb|Cargo| pored distribuiranja paketa pruža razne olakšice i automatizacije u odnosu na sirovo korišćenje \verb|Rust| kompajlera. 
-Komanda \verb|cargo init| se koristi da bi se jednostavno inicijalizovao novi \verb|Crate| zajedno sa \verb|Cargo.toml| fajlom. 
-Komande \verb|cargo| \verb|add| i \verb|cargo| \verb|remove| dodaju i brišu paket iz \verb|Cargo.toml| fajla.
-Komanda \verb|cargo| \verb|check| kompajlira trenutni \verb|Crate| bez generacije koda (bez upotrebe LLVM-a) što je značajno brže 
-od pokretanja \verb|cargo| \verb|build| koji i generiše kod. Ovo je korisno jer je većinski deo dijagnostike zasnovan 
-na koracima pre generisanja koda. Komanda \verb|cargo| \verb|run| konstriše paket i izvršava ga. Ovo je značajno jer u većini slučajeva korisnik želi da pokrene program nakon što je 
-napisao izmenu i izbegava \verb|CLI| gimnastiku dolaska do \verb|/target| foldera i pokretanja izvršnog fajla. 
-Komanda \verb|cargo| \verb|test| pokreće sve \verb|unit| testove koji se definišu upotrebom atributa \verb|test| nad funkcijama.
-Budući da je \verb|Cargo| delom apstrakcija nad \verb|rustc| kompajlerom i da je \verb|rustc| izuzetno konfigurabilan, koristi se komanda \verb|cargo| \verb|rustc|
-koja prima dodatne kompajlerske opcije.
+\verb|Cargo| поред дистрибуирања пакета пружа разне олакшице и аутоматизације у односу на сирово коришћење \verb|Rust| компајлера. 
+Команда \verb|cargo init| се користи да би се једноставно иницијализовао нови \verb|Crate| заједно са \verb|Cargo.toml| фајлом. 
+Команде \verb|cargo| \verb|add| и \verb|cargo| \verb|remove| додају и бришу пакет из \verb|Cargo.toml| фајла.
+Команда \verb|cargo| \verb|check| компајлира тренутни \verb|Crate| без генерације кода (без употребе ЛЛВМ-а) што је значајно брже 
+од покретања \verb|cargo| \verb|build| који и генерише код. Ово је корисно јер је већински део дијагностике заснован 
+на корацима пре генерисања кода. Команда \verb|cargo| \verb|run| констрише пакет и извршава га. Ово је значајно јер у већини случајева корисник жели да покрене програм након што је 
+написао измену и избегава \verb|CLI| гимнастику доласка до \verb|/target| фолдера и покретања извршног фајла. 
+Команда \verb|cargo| \verb|test| покреће све \verb|unit| тестове који се дефинишу употребом атрибута \verb|test| над функцијама.
+Будући да је \verb|Cargo| делом апстракција над \verb|rustc| компајлером и да је \verb|rustc| изузетно конфигурабилан, користи се команда \verb|cargo| \verb|rustc|
+која прима додатне компајлерске опције.
 
 \newpage
 
-\subsection{LLVM projekat}
+\subsection{LLVM пројекат}
 
-Generisanje koda je jedan od najtežih zadataka prilikom kreiranja novog kompajlera. Izvorni kod koji 
-korisnici pišu se prevodi u mašinski kod i pre svega mora biti tačan. Pored tačnosti cilj prilikom 
-dizajniranja generatora koda jeste laka implementacija, testiranje i održavanje.
-Prilikom prevodjenja obično postoji 
-više medju reprezentacija izvornog koda sa ciljem da validira i optimizuje izvorni kod. Medju reprezentacije 
-se svrstavaju u \verb|frontend| ili u \verb|backend|. \verb|Frontend| ima za zadatak da skenira, parsira 
-i prevede izvorni kod u relativno nisku medju reprezentaciju. \verb|Backend| stoga može da pretpostavi 
-da su sve statičke sintaktičke i semantičke greške detektovane i da su tipovi i njihove konverzije
-obradjene na osnovu čega optimizuje i generiše kod za ciljanu arhitekturu.
+Генерисање кода је један од најтежих задатака приликом креирања новог компајлера. Изворни код који 
+корисници пишу се преводи у машински код и пре свега мора бити тачан. Поред тачности циљ приликом 
+дизајнирања генератора кода јесте лака имплементација, тестирање и одржавање.
+Приликом превођења обично постоји 
+више међу репрезентација изворног кода са циљем да валидира и оптимизује изворни код. Међу репрезентације 
+се сврставају у \verb|frontend| или у \verb|backend|. \verb|Frontend| има за задатак да скенира, парсира 
+и преведе изворни код у релативно ниску међу репрезентацију. \verb|Backend| стога може да претпостави 
+да су све статичке синтактичке и семантичке грешке детектоване и да су типови и њихове конверзије
+обрађене на основу чега оптимизује и генерише код за циљану архитектуру.
 
-LLVM projekat je skup modularnih i ponovo iskoristivih kompajlerskih tehnologija \cite{llvm}. Pod okriljem \verb|LLVM|-a
-se nalaze brojni projekti. Glavni projekat je \verb|LLVM| \verb|Core| unutar koga je specificirana \verb|LLVM|
-medju reprezentacija (\verb|LLVM| \verb|IR|) na kojoj se zasniva modularnost. Nad \verb|LLVM| medju reprezentacijom
-je implementiran optmizator čiji kod se prosledjuje generatoru (\verb|backend|-u) koda cljane arhitekture. Samim time 
-bilo koji \verb|frontend| koji se napiše tako da je krajnji izlaz \verb|LLVM| \verb|IR| može da iskoristi 
-ostale delove kompajlera bez ikakvih dodatnih izmena \ref{lst:llvm_modular}.
+\verb|LLVM| пројекат је скуп модуларних и поново искористивих компајлерских технологија \cite{llvm}. Под окриљем \verb|LLVM|-а
+се налазе бројни пројекти. Главни пројекат је \verb|LLVM| \verb|Core| унутар кога је специфицирана \verb|LLVM|
+међу репрезентација (\verb|LLVM| \verb|IR|) на којој се заснива модуларност. Над \verb|LLVM| међу репрезентацијом
+је имплементиран оптмизатор чији код се прослеђује генератору (\verb|backend|-у) кода циљане архитектуре. Самим тиме 
+било који \verb|frontend| који се напише тако да је крајњи излаз \verb|LLVM| \verb|IR| може да искористи 
+остале делове компајлера без икаквих додатних измена \ref{lst:llvm_modular}.
 
 \begin{listing}[H]
 \begin{center}
 \includegraphics[width=5in, height=1.6in]{assets/images/modern_compiler_design.png}
 \end{center}
-\caption{Modularnost LLVM-a}
+\caption{Модуларност LLVM-a}
 \label{lst:llvm_modular}
 \end{listing}
 
-Postoje brojne vrste optimizacije koje se mogu izvršiti nad izvornim kodom. Optimizacije se obično svode 
-na tri osnovna koraka, pronalazak šablona koji se treba transformisati, validirati da li je bezbedno primeniti 
-transformaciju i izvršavanje transformacije \cite{oss-architecture}. Optimizacije u \verb|LLVM| optmizatoru su modularne i izvršavaju 
-se nad \verb|LLVM| medju reprezentacijom. Svaka \verb|LLVM| optmizacija je napisana kao \verb|C++| klasa koja 
-nasledjuje \verb|Pass| (prolazak) klasu. Većina prolazaka je napisana u jedanom \verb|.cpp| fajlu.
-Stoga otvara se mogućnost da se dodaju optimizacije specifične za jezik. Svaki prolazak se kompajlira u jedan 
-ili više relokatabilnih objekata, (\verb|.o|) fajlova koji se potom grupišu u arhivne (\verb|.a|) fajlove. Objektni fajlovi 
-su mašinski kod pre procesa linkovanja. Linkovanje je proces skupljanja i kombinovanja relokatabilnih objektnih fajlova
-u jedan izvršni objektni fajl. Prilikom linkovanja nekog \verb|.o| fajla sa \verb|.a| fajlom linker će 
-za svaki do tada nespojen simbol probati da nadje vezu u svim \verb|.o| fajlovima arhive.
+Постоје бројне врсте оптимизације које се могу извршити над изворним кодом. Оптимизације се обично своде 
+на три основна корака, проналазак шаблона који се треба трансформисати, валидирати да ли је безбедно применити 
+трансформацију и извршавање трансформације \cite{oss-architecture}. Оптимизације у \verb|LLVM| оптмизатору су модуларне и извршавају 
+се над \verb|LLVM| међу репрезентацијом. Свака \verb|LLVM| оптмизација је написана као \verb|C++| класа која 
+наслеђује \verb|Pass| (пролазак) класу. Већина пролазака је написана у једаном \verb|.cpp| фајлу.
+Стога отвара се могућност да се додају оптимизације специфичне за језик. Сваки пролазак се компајлира у један 
+или више релокатабилних објеката, (\verb|.o|) фајлова који се потом групишу у архивне (\verb|.a|) фајлове. Објектни фајлови 
+су машински код пре процеса линковања. Линковање је процес скупљања и комбиновања релокатабилних објектних фајлова
+у један извршни објектни фајл. Приликом линковања неког \verb|.o| фајла са \verb|.a| фајлом линкер ће 
+за сваки до тада неспојен симбол пробати да нађе везу у свим \verb|.o| фајловима архиве.
 
-\verb|LLVM| generator koda je odgovaran za prevodjenje \verb|LLVM| medju reprezentacije u mašinski kod ciljane 
-arhitekture. Idealno za svaku arhitekturu postojao bi specifičan kod za prevodjenje, ali u isto vreme 
-svi generatori rade vrlo sličan posao. Slično kao i kod optimizacije proces generisanja koda se deli u prolaske,
-izbor seta instrukcija, način alokacije registara, planiranje (\verb|scheduling|), optimizacija rasporeda 
-koda i generisanje asemblerskog koda. Pri kreiranju generatora za novu ciljnu arhitekturu svaki od ovih prolazaka
-može ponovo da se iskoristi, modifikuje ili potpuno zameni.
+\verb|LLVM| генератор кода је одговаран за превођење \verb|LLVM| међу репрезентације у машински код циљане 
+архитектуре. Идеално за сваку архитектуру постојао би специфичан код за превођење, али у исто време 
+сви генератори раде врло сличан посао. Слично као и код оптимизације процес генерисања кода се дели у проласке,
+избор сета инструкција, начин алокације регистара, планирање (\verb|scheduling|), оптимизација распореда 
+кода и генерисање асемблерског кода. При креирању генератора за нову циљну архитектуру сваки од ових пролазака
+може поново да се искористи, модификује или потпуно замени.
 
-\verb|LLVM| medju reprezentacija se veoma efikasno serijalizuje u i deserializuje iz \verb|LLVM| bitkoda. 
-Ova efikasnost otvara mogućnost za optimizaciju u vreme linkovanja \ref{lst:link_time_opt}. To je još jedan set optimizacionih prolazaka 
-koji dodatno poboljšava kranji mašinski kod. Linker prepoznaje da se u \verb|.o| fajlovima nalazi 
-\verb|LLVM| bitkod umesto mašinskog koda, učitava ih u memoriju, linkuje ih, a potom izvršava \verb|LLVM|
-optimizator nad mnogo većom celinom koda, omogućavajući daleko agresivnije optimizacije. 
-Ova opcija se uključuje dodavanjem \verb|-O4| opcije komandne linije. 
+\verb|LLVM| међу репрезентација се веома ефикасно серијализује у и десериализује из \verb|LLVM| биткода. 
+Ова ефикасност отвара могућност за оптимизацију у време линковања \ref{lst:link_time_opt}. То је још један сет оптимизационих пролазака 
+који додатно побољшава крањи машински код. Линкер препознаје да се у \verb|.o| фајловима налази 
+\verb|LLVM| биткод уместо машинског кода, учитава их у меморију, линкује их, а потом извршава \verb|LLVM|
+оптимизатор над много већом целином кода, омогућавајући далеко агресивније оптимизације. 
+Ова опција се укључује додавањем \verb|-O4| опције командне линије. 
 
 \begin{listing}[H]
 \begin{center}
 \includegraphics[width=6in, height=2.2in]{assets/images/link_time_optimization.png}
 \end{center}
-\caption{Optimizacija u vreme linkovanja}
+\caption{Оптимизација у време линковања}
 \label{lst:link_time_opt}
 \end{listing}
 
-\verb|LLVM| medju reprezentacija podesća na asemblerski jezik. Strogo je tipiziran i poseduje jednostavne 
-tipove poput celih brojeva, brojeva sa pokretnim zarezom, pokazivača i struktura. Jedna od glavnih razlika 
-u odnosu na asembler jeste to što ne koristi ograničeni broj imenovanih registara već koristi beskonačan 
-skup promenljivih koje se definišu sa \verb|%| prefiksom. Neki detalji mašine su apstrahovani od korisnika 
-poput poziva funkcija (\verb|call|) i vraćanja vrednosti (\verb|ret|) \ref{lst:llvm_ir}.
+\verb|LLVM| међу репрезентација подесћа на асемблерски језик. Строго је типизиран и поседује једноставне 
+типове попут целих бројева, бројева са покретним зарезом, показивача и структура. Једна од главних разлика 
+у односу на асемблер јесте то што не користи ограничени број именованих регистара већ користи бесконачан 
+скуп променљивих које се дефинишу са \verb|%| префиксом. Неки детаљи машине су апстраховани од корисника 
+попут позива функција (\verb|call|) и враћања вредности (\verb|ret|) \ref{lst:llvm_ir}.
 
 \begin{listing}[H]
 \begin{minted}{llvm}
@@ -286,15 +286,15 @@ done:
   ret i32 %b
 }
 \end{minted}
-\caption{LLVM medju reprezentacija}
+\caption{LLVM међурепрезентација}
 \label{lst:llvm_ir}
 \end{listing}
 
-\verb|Rust| jezik je \verb|frontend| nad \verb|LLVM|-om. Postoji puno olakšica u ovom pristupu.
-\verb|Rust| tim ima cilj da izgeneriše pravilnu \verb|LLVM| medju reprezentaciju, na osnovu koje 
-\verb|LLVM| izvršava optimizacione prolaske i generiše kod. Greške prilikom generisanja koda ne mora da 
-održava \verb|Rust| tim, što značajno smanjuje količinu ljudi koja aktivno mora da bude uključena u razvoj. 
-Svaka ciljna distribucija (arhitektura) koju \verb|LLVM| podržava automatski podržava i \verb|Rust|. Optimizacije se ne moraju 
-posebno pisati i održavati jer \verb|LLVM| već poseduje značajan broj čestih optimizacija. \verb|Rust| 
-omogućava kompajliranje na osnovu više \verb|LLVM| verzija, poslednja glavna verzija je uvek podržana,
-i obično su podržane jedna ili dve ispod nje.
+\verb|Rust| језик је \verb|frontend| над \verb|LLVM|-ом. Постоји пуно олакшица у овом приступу.
+\verb|Rust| тим има циљ да изгенерише правилну \verb|LLVM| међурепрезентацију, на основу које 
+\verb|LLVM| извршава оптимизационе проласке и генерише код. Грешке приликом генерисања кода не мора да 
+одржава \verb|Rust| тим, што значајно смањује количину људи која активно мора да буде укључена у развој. 
+Свака циљна дистрибуција (архитектура) коју \verb|LLVM| подржава аутоматски подржава и \verb|Rust|. Оптимизације се не морају 
+посебно писати и одржавати јер \verb|LLVM| већ поседује значајан број честих оптимизација. \verb|Rust| 
+омогућава компајлирање на основу више \verb|LLVM| верзија, последња главна верзија је увек подржана,
+и обично су подржане једна или две испод ње.

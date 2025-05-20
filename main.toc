@@ -1,30 +1,31 @@
-\contentsline {section}{\numberline {1}Spisak skraćenica}{7}{section.1}%
-\contentsline {section}{\numberline {2}Uvod}{9}{section.2}%
-\contentsline {section}{\numberline {3}Pozadina}{10}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Rust jezik}{10}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}Cargo}{12}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}LLVM projekat}{13}{subsection.3.3}%
-\contentsline {section}{\numberline {4}Rust kompajler}{15}{section.4}%
-\contentsline {section}{\numberline {5}Medjureprezentacije izvornog koda}{19}{section.5}%
+\selectlanguage *{serbian}
+\contentsline {section}{\numberline {1}Списак скраћеница}{5}{section.1}%
+\contentsline {section}{\numberline {2}Увод}{7}{section.2}%
+\contentsline {section}{\numberline {3}Позадина}{8}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Rust језик}{8}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Cargo}{11}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}LLVM пројекат}{12}{subsection.3.3}%
+\contentsline {section}{\numberline {4}Rust компајлер}{14}{section.4}%
+\contentsline {section}{\numberline {5}Међурепрезентације изворног кода}{19}{section.5}%
 \contentsline {subsection}{\numberline {5.1}Tok tokena}{20}{subsection.5.1}%
 \contentsline {subsubsection}{\numberline {5.1.1}rustc\_lexer}{20}{subsubsection.5.1.1}%
 \contentsline {subsubsection}{\numberline {5.1.2}rustc\_parse::lexer}{21}{subsubsection.5.1.2}%
-\contentsline {subsection}{\numberline {5.2}Apstraktno Sintaksno Stablo}{25}{subsection.5.2}%
-\contentsline {subsection}{\numberline {5.3}Medjureprezentacija visokog nivoa (MVN) - High-Level Intermediate Representation (HIR)}{28}{subsection.5.3}%
-\contentsline {subsubsection}{\numberline {5.3.1}Konstrukcija}{28}{subsubsection.5.3.1}%
-\contentsline {subsubsection}{\numberline {5.3.2}Sitem upita}{28}{subsubsection.5.3.2}%
-\contentsline {subsubsection}{\numberline {5.3.3}Inkrementalno kompajliranje}{29}{subsubsection.5.3.3}%
-\contentsline {subsection}{\numberline {5.4}Tipizirana medjureprezentacija visokog nivoa (TMVN) - Typed HIR (THIR)}{31}{subsection.5.4}%
-\contentsline {subsubsection}{\numberline {5.4.1}Bezbednost}{31}{subsubsection.5.4.1}%
-\contentsline {subsubsection}{\numberline {5.4.2}Provera šablona}{31}{subsubsection.5.4.2}%
-\contentsline {subsection}{\numberline {5.5}Medjureprezentacija srednjeg nivoa (MSN) - Mid-Level Intermediate Representation (MIR)}{32}{subsection.5.5}%
-\contentsline {subsubsection}{\numberline {5.5.1}Graf kontrole toka}{32}{subsubsection.5.5.1}%
-\contentsline {subsubsection}{\numberline {5.5.2}Optimizacija koda u MSN-u}{34}{subsubsection.5.5.2}%
-\contentsline {subsubsection}{\numberline {5.5.3}Neleksički životni vekovi}{35}{subsubsection.5.5.3}%
-\contentsline {section}{\numberline {6}Zaključak}{37}{section.6}%
-\contentsline {section}{\numberline {7}Literatura}{38}{section.7}%
-\contentsline {section}{\numberline {8}Dodatak 1}{39}{section.8}%
-\contentsline {section}{\numberline {9}Dodatak 2}{40}{section.9}%
-\contentsline {section}{\numberline {10}Dodatak 3}{41}{section.10}%
-\contentsline {section}{\numberline {11}Dodatak 4}{42}{section.11}%
-\contentsline {section}{\numberline {12}Podaci o kandidatu}{43}{section.12}%
+\contentsline {subsection}{\numberline {5.2}Апстрактно синтаксно стабло}{25}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Међурепрезентација високог нивоа (МВН) - High-Level Intermediate Representation (HIR)}{28}{subsection.5.3}%
+\contentsline {subsubsection}{\numberline {5.3.1}Конструкција}{28}{subsubsection.5.3.1}%
+\contentsline {subsubsection}{\numberline {5.3.2}Систем упита}{28}{subsubsection.5.3.2}%
+\contentsline {subsubsection}{\numberline {5.3.3}Инкрементално компајлирање}{29}{subsubsection.5.3.3}%
+\contentsline {subsection}{\numberline {5.4}Типизирана међурепрезентација високог \\ нивоа (ТМВН) - Typed HIR (THIR)}{31}{subsection.5.4}%
+\contentsline {subsubsection}{\numberline {5.4.1}Безбедност}{31}{subsubsection.5.4.1}%
+\contentsline {subsubsection}{\numberline {5.4.2}Провера шаблона}{31}{subsubsection.5.4.2}%
+\contentsline {subsection}{\numberline {5.5}Међурепрезентација средњег нивоа (МСН) - Mid-Level Intermediate Representation (MIR)}{32}{subsection.5.5}%
+\contentsline {subsubsection}{\numberline {5.5.1}Граф контроле тока}{32}{subsubsection.5.5.1}%
+\contentsline {subsubsection}{\numberline {5.5.2}Оптимизација кода у МСН-у}{34}{subsubsection.5.5.2}%
+\contentsline {subsubsection}{\numberline {5.5.3}Нелексички животни векови}{35}{subsubsection.5.5.3}%
+\contentsline {section}{\numberline {6}Закључак}{38}{section.6}%
+\contentsline {section}{\numberline {7}Литература}{39}{section.7}%
+\contentsline {section}{\numberline {8}Додатак 1}{40}{section.8}%
+\contentsline {section}{\numberline {9}Додатак 2}{41}{section.9}%
+\contentsline {section}{\numberline {10}Додатак 3}{42}{section.10}%
+\contentsline {section}{\numberline {11}Додатак 4}{43}{section.11}%
+\contentsline {section}{\numberline {12}Подаци о кандидату}{44}{section.12}%

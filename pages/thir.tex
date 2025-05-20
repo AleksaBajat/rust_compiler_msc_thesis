@@ -1,37 +1,35 @@
-\subsection{Tipizirana medjureprezentacija visokog nivoa (TMVN) - Typed HIR (THIR)}
+\subsection{Типизирана међурепрезентација високог \\ нивоа (ТМВН) - Typed HIR (THIR)}
 
-Tipizirana medjureprezentacija visokog nivoa je medjureprezentacija izvornog koda koja nastaje dopunom stabla tipovima.
-Za razliku od \verb|HIR| medjureprezentacije, \verb|TMVN| sadrži samo tela tj. izvršni kod. To znači da \verb|TMVN| 
-ne sadrži reprezentaciju stavki kao što su strukture (\verb|struct|) i osobine (\verb|traits|). Svako telo u ovoj reprezentaciji
-se čuva priveremeno u memoriji i odbačeno čim više nije potrebno. Ovo je bitna distinkcija u donosu na \verb|HIR| gde se reprezentacija 
-čuva tokom celokupnog procesa kompilacije. Dodatno, automatska referenciranja i dereferenciranja su eksplicitna, pozivi metoda i 
-preklopljeni operatori su pretvoreni u obične pozive funkcija. Uništenje opsega je u ovoj reprezentaciji eksplicitno.
-Izrazi, iskazi i klauzule \verb|match| odredbe se čuvaju posebno.
+Типизирана међурепрезентација високог нивоа је међурепрезентација изворног кода која настаје допуном стабла типовима.
+За разлику од \verb|HIR| међурепрезентације, ТМВН садржи само тела тј. извршни код. То значи да ТМВН 
+не садржи репрезентацију ставки као што су структуре (\verb|struct|) и особине (\verb|traits|). Свако тело у овој репрезентацији
+се чува приверемено у меморији и одбачено чим више није потребно. Ово је битна дистинкција у доносу на \verb|HIR| где се репрезентација 
+чува током целокупног процеса компилације. Додатно, аутоматска референцирања и дереференцирања су експлицитна, позиви метода и 
+преклопљени оператори су претворени у обичне позиве функција. Уништење опсега је у овој репрезентацији експлицитно.
+Изрази, искази и клаузуле \verb|match| одредбе се чувају посебно.
 
-\subsubsection{Bezbednost}
+\subsubsection{Безбедност}
 
-Pojednostavljivanjem izvornog koda sažima se broj različitih načina da se isti kod napiše i smanjuje razdaljinu izmedju 
-koda koji se analizira (AST) i koda koji se izvršava (bitcode).
-Upravo taj manjak instrukcione kompleksnosti čini tipiziranu medjureprezentaciju značajnu u proveri bezbednosti. 
-Provere bezbednosti se nalaze u modulu \verb|check_unsafety|.
-Algoritam prolazi kroz telo funkcije i sve njene anonimne funkcije prateći da li je nebezbednom \verb|unsafe| kontekstu.
-Ukoliko se nebezbedan kod poziva van nebezbednog (\verb|unsafe|) bloka greška će biti prikazana. Algoritam takodje vodi računa da li 
-postoji nebezbedan blok u kome se ne koristi nebezbedan kod. Ako postoji ovakav blok kompajler će prikazati upozorenje (\verb|lint|).
+Поједностављивањем изворног кода сажима се број различитих начина да се исти код напише и смањује раздаљину између 
+кода који се анализира (АСТ) и кода који се извршава (битцоде).
+Управо тај мањак инструкционе комплексности чини типизирану међурепрезентацију значајну у провери безбедности. 
+Провере безбедности се налазе у модулу \verb|check_unsafety|.
+Алгоритам пролази кроз тело функције и све њене анонимне функције пратећи да ли је небезбедном \verb|unsafe| контексту.
+Уколико се небезбедан код позива ван небезбедног (\verb|unsafe|) блока грешка ће бити приказана. Алгоритам такође води рачуна да ли 
+постоји небезбедан блок у коме се не користи небезбедан код. Ако постоји овакав блок компајлер ће приказати упозорење (\verb|lint|).
 
-Dodatak \ref{lst:safety_check} prikazuje isečak glavne funkcije koja je odgovorna za opseg bezbednosti. 
-Na osnovu \verb|LocalDefId| dobavlja se telo u \verb|TMVN| medjureprezentaciji. Potom se na osnovu istog 
-identifikatora evaluira \verb|HirId| uz pomoć kojeg se vrši upit nad \verb|HIR|-om čime se otkriva početni kontekst bezbednosti.
-Struktura \verb|UnsafeVisitor| koristi \verb|TMVN| telo, na osnovu kog sprovodi prethodno objašnjen algoritam. Može se primetiti 
-da se ovde incijalizuje vektor upozorenja koja se prikazuju ukoliko se nebezbedan kod ne koristi u nebezbednom kontekstu.
+Додатак \ref{lst:safety_check} приказује исечак главне функције која је одговорна за опсег безбедности. 
+На основу \verb|LocalDefId| добавља се тело у ТМВН међурепрезентацији. Потом се на основу истог 
+идентификатора евалуира \verb|HirId| уз помоћ којег се врши упит над \verb|HIR|-ом чиме се открива почетни контекст безбедности.
+Структура \verb|UnsafeVisitor| користи ТМВН тело, на основу ког спроводи претходно објашњен алгоритам. Може се приметити 
+да се овде инцијализује вектор упозорења која се приказују уколико се небезбедан код не користи у небезбедном контексту.
 
-\subsubsection{Provera šablona}
-Rust jezik poseduje karakteristiku da ukoliko se koristi provera šablona (\verb|pattern matching|), svaka moguća 
-varijacija šablona mora biti obradjena (ima odgovarajuću logiku) tj. provera štablona je iscrpna \ref{lst:pattern_matching}.
-Proveru da li je iscrpnost zadovoljena izvršava \verb|TMVN|. U provere šablona spadaju izrazi \verb|match|, \verb|if let|, \verb|while let|,
-\verb|let else|, \verb|let|, pa čak i argumenti funkcija. Pored iscrpnosti, proverava se i korisnost šablona. Korisnost odgovara na pitanje 
-da li je neko grananje redudantno. Ovo je vredno korisniku jezika jer skreće pažnju da je neki segment izvornog koda nedostižan. 
-
-
+\subsubsection{Провера шаблона}
+\verb|Rust| језик поседује карактеристику да уколико се користи провера шаблона (\verb|pattern matching|), свака могућа 
+варијација шаблона мора бити обрађена (има одговарајућу логику) тј. провера штаблона је исцрпна \ref{lst:pattern_matching}.
+Проверу да ли је исцрпност задовољена извршава ТМВН. У провере шаблона спадају изрази \verb|match|, \verb|if let|, \verb|while let|,
+\verb|let else|, \verb|let|, па чак и аргументи функција. Поред исцрпности, проверава се и корисност шаблона. Корисност одговара на питање 
+да ли је неко гранање редудантно. Ово је вредно кориснику језика јер скреће пажњу да је неки сегмент изворног кода недостижан. 
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -43,9 +41,8 @@ fn main() {
         IpAddrKind::V6 => println!("Ovo je IPv6 adresa.") 
         // Da je postojao IpAddrKind::V7 Rust bi zahtevao 
         // da i ta varijanta bude obradjena.
-    }
-}
+    }}
 \end{minted}
-\caption{Provera šablona}
+\caption{Провера шаблона}
 \label{lst:pattern_matching}
 \end{listing}

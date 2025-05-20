@@ -1,14 +1,14 @@
 \subsection{Tok tokena}
 
-Kompajler poseduje naizgled dva leksera. Lekser niskog nivoa je \verb|rustc_lexer|, a lekser visokog nivoa je \verb|rustc_parse::lexer|. 
-Obe implementacije su važne jer \verb|rusc_parse::lexer| koristi \verb|rustc_lexer| tokom kompajliranja.
+Компајлер поседује наизглед два лексера. Лексер ниског нивоа је \verb|rustc_lexer|, а лексер високог нивоа је \verb|rustc_parse::lexer|. 
+Обе имплементације су важне јер \verb|rusc_parse::lexer| користи \verb|rustc_lexer| током компајлирања.
 
 \subsubsection{rustc\_lexer}
 
-\verb|rustc_lexer| je lekser niskog nivoa koji poseduje sve osnovne
-funkcionalnosti potrebne prilikom prikupljanja leksema.
-Glavna funkcija iz ovog modula jeste \verb|tokenize| koja na osnovu celokupnog teksta 
-izvornog koda dobavlja skup tokena tj. leksema \ref{lst:tokenize}.
+\verb|rustc_lexer| је лексер ниског нивоа који поседује све основне
+функционалности потребне приликом прикупљања лексема.
+Главна функција из овог модула јесте \verb|tokenize| која на основу целокупног текста 
+изворног кода добавља скуп токена тј. лексема \ref{lst:tokenize}.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -20,15 +20,15 @@ pub fn tokenize(input: &str) -> impl Iterator<Item = Token> + '_ {
     })
 }
 \end{minted}
-\caption{Ulazna funkcija leksera}
+\caption{Улазна функција лексера}
 \label{lst:tokenize}
 \end{listing}
 
-Implementacija je bazirana na kursoru i unutar te strukture se nalazi celokupna logika leksera. 
-Kursor je realizovan pomoću Rust-ovog iteratora i na osnovu njega prati trenutnu poziciju 
-unutar izvornog koda. Veoma je bitna mogućnost gledanja ispred (\verb|look-ahead|) koja omogućava 
-izvršavanje u jednom prolasku.
-Kloniranje iteratora je jeftina operacija jer se svodi na kopiranje trenutne adresa.
+Имплементација је базирана на курсору и унутар те структуре се налази целокупна логика лексера. 
+Курсор је реализован помоћу \verb|Rust|-овог итератора и на основу њега прати тренутну позицију 
+унутар изворног кода. Веома је битна могућност гледања испред (\verb|look-ahead|) која омогућава 
+извршавање у једном проласку.
+Клонирање итератора је јефтина операција јер се своди на копирање тренутне адреса.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -48,10 +48,11 @@ Kloniranje iteratora je jeftina operacija jer se svodi na kopiranje trenutne adr
         iter.next().unwrap_or(EOF_CHAR)
     }
 \end{minted}
-\caption{"Look-ahead" mehanizam}
+\caption{"Look-ahead" механизам}
 \end{listing}
-\verb|Token| sadrži samo informaciju o tipu token-a i njegovu dužinu ali ne i 
-sam podatak.
+
+\verb|Token| садржи само информацију о типу токен-а и његову дужину али не и 
+сам податак.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -61,14 +62,14 @@ pub struct Token {
     pub len: u32,
 }   
 \end{minted}
-\caption{Definicija "Token" strukture}
+\caption{Дефиниција "Token" структуре}
 \end{listing}
 
 \subsubsection{rustc\_parse::lexer}
 
-Lekser višeg nivoa \verb|rustc_parse::lexer| koristi \verb|rustc_lexer| prilikom izvršavanja sopstvenih
-operacija. Bitna razlika je to što se sadržaj token analizira i postavlja u kontekst.
-Lekser višeg nivoa koristi kursor svog prethodnika za dobavljanje leksema kroz strukturu \verb|StringReader|. 
+Лексер вишег нивоа \verb|rustc_parse::lexer| користи \verb|rustc_lexer| приликом извршавања сопствених
+операција. Битна разлика је то што се садржај токен анализира и поставља у контекст.
+Лексер вишег нивоа користи курсор свог претходника за добављање лексема кроз структуру \verb|StringReader|. 
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -83,35 +84,36 @@ Lekser višeg nivoa koristi kursor svog prethodnika za dobavljanje leksema kroz 
         last_lifetime: Option<Span>,
     }
 \end{minted}
-\caption{Definicija "StringReader" strukture}
+\caption{Дефиниција "StringReader" структуре}
 \end{listing}
-\verb|StringReader| prati trenutnu poziciju unutar izvornog koda, a kursor 
-dobavlja token koji ima odredjenu dužinu. Sadržaj tokena je niz karaktera sa početkom u \verb|pos|,
-dužine \verb|token.len|. 
 
-Prolaskom kroz izvorni kod izvršavaju se sledeće akcije:
+\verb|StringReader| прати тренутну позицију унутар изворног кода, а курсор 
+добавља токен који има одређену дужину. Садржај токена је низ карактера са почетком у \verb|pos|,
+дужине \verb|token.len|. 
+
+Проласком кроз изворни код извршавају се следеће акције:
 \begin{enumerate}
-    \item Interniranje 
-    \item Tokeni iz \verb|rustc_lexer| se mapiraju na tokene iz \verb|rustc_ast|
-    \item Rezulucija zagrada svih tipova.
-    \item Problemi i preporuke generišu dijagnostiku 
+    \item Интернирање 
+    \item Токени из \verb|rustc_lexer| се мапирају на токене из \verb|rustc_ast|
+    \item Резулуција заграда свих типова.
+    \item Проблеми и препоруке генеришу дијагностику 
 \end{enumerate}
 
-Interniranje je optmizacija performansi i memorije gde se vrednosti alociraju unutar 
-posebnog alokatora koji se naziva \verb|arena|. Svaka ovako alocirana vrednost se prenosi po 
-referenci što omogućava da se identične vrednosti u programu alociraju jednom. Poredjenja
-su takodje značajno jeftinija jer je moguće samo porediti memorijske adrese. 
-Internirana vrednost se naziva simbol. Tabela simbola je struktura podataka
-koja skladišti i omogućava O(1) pristup bilo kom simbolu.  Tabela simbola je implementirana pomoću \verb|IndexSet|
-strukture. Ne internira se svaki token, već samo tokeni koji imaju varijabilnu dužinu značajne veličine.
+Интернирање је оптмизација перформанси и меморије где се вредности алоцирају унутар 
+посебног алокатора који се назива \verb|arena|. Свака овако алоцирана вредност се преноси по 
+референци што омогућава да се идентичне вредности у програму алоцирају једном. Поређења
+су такође значајно јефтинија јер је могуће само поредити меморијске адресе. 
+Интернирана вредност се назива симбол. Табела симбола је структура података
+која складишти и омогућава О(1) приступ било ком симболу.  Табела симбола је имплементирана помоћу \verb|IndexSet|
+структуре. Не интернира се сваки токен, већ само токени који имају варијабилну дужину значајне величине.
 
-Prilikom interniranja koristi se \verb|SpanData| struktura koja ima 16 bajta. Još jedna struktura koja 
-se koristi jeste \verb|Span| koja ima 8 bajta što znači manje prostora za dužinu, roditelja i kontekst. 
-Procentualno, preko 99.9\%  \verb|SpanData| instanci mogu da stanu u tih 8 bajta. Svaki \verb|SpanData|
-čija polja ne mogu da ispune ovaj kriterijum se čuvaju u tabeli simbola i \verb|Span| će izvlačiti podatke 
-odatle. Interniranje je dovoljno retko da je cena niska, ali dovoljno često da pruža poboljšanje. 
-Ranije verzije \verb|Rust| kompajlera koristile su samo 4 bajta za \verb|Span|, ali to je bilo sporije 
-jer se samo 90\% \verb|Span|-ova moglo sadržati bez pristupanja tabeli simbola.
+Приликом интернирања користи се \verb|SpanData| структура која има 16 бајта. Још једна структура која 
+се користи јесте \verb|Span| која има 8 бајта што значи мање простора за дужину, родитеља и контекст. 
+Процентуално, преко 99.9\%  \verb|SpanData| инстанци могу да стану у тих 8 бајта. Сваки \verb|SpanData|
+чија поља не могу да испуне овај критеријум се чувају у табели симбола и \verb|Span| ће извлачити податке 
+одатле. Интернирање је довољно ретко да је цена ниска, али довољно често да пружа побољшање. 
+Раније верзије \verb|Rust| компајлера користиле су само 4 бајта за \verb|Span|, али то је било спорије 
+јер се само 90\% \verb|Span|-ова могло садржати без приступања табели симбола.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -123,7 +125,7 @@ pub struct Span {
     ctxt_or_parent_or_marker: u16,
 }
 \end{minted}
-\caption{Definicija "Span" strukture}
+\caption{Дефинциија "Span" структуре}
 \end{listing}
 
 
@@ -140,15 +142,14 @@ pub struct SpanData {
     pub parent: Option<LocalDefId>,
 }
 \end{minted}
-\caption{Definicija "SpanData" strukture}
+\caption{Дефиниција "SpanData" структуре}
 \end{listing}
 
-Postoji četiri različita formata \verb|Span|-a, \verb|inline|-\verb|context| format, \verb|inline|-\verb|parent| format,
-\verb|partially|-\verb|interned| format i \verb|fully-interned| format.  Prepoznaju se na osnovu vrednosti polja.
+Постоји четири различита формата \verb|Span|-а, \verb|inline|-\verb|context| формат, \verb|inline|-\verb|parent| формат,
+\verb|partially|-\verb|interned| формат и \verb|fully-interned| формат.  Препознају се на основу вредности поља.
 
-
-Mapiranje tokena iz leksera u tip tokena iz apstraktnog sintaksnog stabla je trivialno.
-Za proste tipove vrši se jedan na jedan konverzija.
+Мапирање токена из лексера у тип токена из апстрактног синтаксног стабла је тривиално.
+За просте типове врши се један на један конверзија.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -156,27 +157,29 @@ Za proste tipove vrši se jedan na jedan konverzija.
     rustc_lexer::TokenKind::Comma => token::Comma,
     rustc_lexer::TokenKind::Dot => token::Dot,
 \end{minted}
-\caption{Prevodjenje tokena iz leksera u AST tokene}
+\caption{Превођење токена из лексера у АСТ токене}
 \end{listing}
-Za tipove koji imaju sadržaj u vidu nizova karaktera, sadržaj se internira i prenosi 
-u novi token putem simbola \ref{lst:intern}. Derivati apstraktnog sintaksnog stabla se često koriste prilikom kompajliranja i zbog toga 
-stablo mora biti memorijski optimizovano.
+
+За типове који имају садржај у виду низова карактера, садржај се интернира и преноси 
+у нови токен путем симбола \ref{lst:intern}. Деривати апстрактног синтаксног стабла се често користе приликом компајлирања и због тога 
+стабло мора бити меморијски оптимизовано.
 
 \begin{listing}[H]
 \begin{minted}{rust}
     let ident = Symbol::intern(lifetime_name);
     token::Lifetime(ident, IdentIsRaw::No)
 \end{minted}
-\caption{Interniranje literala}
+\caption{Интернирање литерала}
 \label{lst:intern}
 \end{listing}
-Tok tokena je skup stabala tokena od kojih je svako stablo sačinjeno od skupa tokena.  
-Rezolucija zagrada je proces unutar kog se validira da li je svaka zagrada pravilno zatvorena.
-Rezolucija zagrada se dešava u samom vrhu procesa \verb|rustc_parser::lexer|-a 
-za vreme kreiranja toka tokena. U kontekstu kompajlera zagrade se nazivaju delimiteri. 
-Svaki otvoreni tip delimitera mora biti zatvoren delimiterom istog tipa koji je zatvoren.
-Na primer, vitičasta zagrada je tip delimitera koja može biti otvoren (\{) ili zatvoren (\}) tj.
-svaka otvorena vitičasta zagrada mora biti zatvorena zatvorenom vitičastom zagradom.
+
+Ток токена је скуп стабала токена од којих је свако стабло сачињено од скупа токена.  
+Резолуција заграда је процес унутар ког се валидира да ли је свака заграда правилно затворена.
+Резолуција заграда се дешава у самом врху процеса \verb|rustc_parser::lexer|-а 
+за време креирања тока токена. У контексту компајлера заграде се називају делимитери. 
+Сваки отворени тип делимитера мора бити затворен делимитером истог типа који је затворен.
+На пример, витичаста заграда је тип делимитера која може бити отворен (\{) или затворен (\}) тј.
+свака отворена витичаста заграда мора бити затворена затвореном витичастом заградом.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -218,21 +221,22 @@ fn lex_token_trees(
                 buf.push(TokenTree::Token(this_tok, this_spacing));
     } } } }
 \end{minted}
-\caption{Generisanje stabla tokena}
+\caption{Генерисање стабла токена}
 \end{listing}
 
 
-Primećuje se da u slučaju da kada delimiter ne postoji, dodavanje tokena u tok tokena 
-je sekvencijalno i ne zahteva nikakvu kompleksnu logiku. Promenljiva \verb|is_delimited|
-označava da li trenutna sekvenca tokena pripada nekom paru delimitera. U slučaju da 
-se naidje na zatvoren tip delimitera bez da je prethodno postojao otvoren, vraća se greška
-u vidu dijagnostike. U sličnom kontekstu, nailazak na token kraj-a fajla bez da je svaka 
-zagrada zatvorena je greška. 
-Nailaskom na \verb|token::Eof| ili \verb|token::CloseDelim| se završava prikupljanje toka tokena.
-Ovo su veoma korisni granični slučajevi koji omogućavaju rekurziju. 
+Примећује се да у случају да када делимитер не постоји, додавање токена у ток токена 
+је секвенцијално и не захтева никакву комплексну логику. Променљива \verb|is_delimited|
+означава да ли тренутна секвенца токена припада неком пару делимитера. У случају да 
+се наиђе на затворен тип делимитера без да је претходно постојао отворен, враћа се грешка
+у виду дијагностике. У сличном контексту, наилазак на токен крај-а фајла без да је свака 
+заграда затворена је грешка. 
+Наиласком на \verb|token::Eof| или \verb|token::CloseDelim| се завршава прикупљање тока токена.
+Ово су веома корисни гранични случајеви који омогућавају рекурзију. 
 
-Obrada otvorenog tipa delimitera u pozadini poziva funkciju \verb|lex_token_trees| koji obradjuje
-stablo tokena (deo toka tokena) izmedju novog para zagrada.
+Обрада отвореног типа делимитера у позадини позива функцију \verb|lex_token_trees| који обрађује
+стабло токена (део тока токена) између новог пара заграда.
+
 \begin{listing}[H]
 \begin{minted}{rust}
     fn lex_token_tree_open_delim(
@@ -262,10 +266,10 @@ stablo tokena (deo toka tokena) izmedju novog para zagrada.
         .
         .
 \end{minted}
-\caption{Parsiranje stabla tokena}
+\caption{Парсирање стабла токена}
 \end{listing}
 
-Neobradjene zagrade se čuvaju u strukturi \verb|TokenTreeDiagInfo| u polju \verb|open_braces|.
-Utvrdjeno je da će po uspešnom završetku izvršavanja funkcije \verb|lex_token_trees| 
-trenutni token biti pozicioniran na zatvoreni tip delimiter-a. To omogućava validaciju 
-pravilnog završetka zagrada.
+Необрађене заграде се чувају у структури \verb|TokenTreeDiagInfo| у пољу \verb|open_braces|.
+Утврђено је да ће по успешном завршетку извршавања функције \verb|lex_token_trees| 
+тренутни токен бити позициониран на затворени тип делимитер-а. То омогућава валидацију 
+правилног завршетка заграда.

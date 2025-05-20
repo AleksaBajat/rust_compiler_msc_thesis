@@ -1,14 +1,14 @@
-\subsection{Medjureprezentacija visokog nivoa (MVN) - High-Level Intermediate Representation (HIR)}
+\subsection{Међурепрезентација високог нивоа (МВН) - High-Level Intermediate Representation (HIR)}
 
-\subsubsection{Konstrukcija}
+\subsubsection{Конструкција}
 
-Obradom proširenog oblika apstraktnog sintaksnog stabla nastaje medjureprezentacija visokog nivoa.
-Proces obrade se naziva snižavanje (\verb|lowering|). Neke sintaksne forme bivaju pojednostavljene.
-Zagrade se uklanjaju jer struktura stabla eksplicitno odredjuje redosled operacija. \verb|For| petlje 
-se konvertuju u \verb|while(let)| petlje \ref{lst:hir_iter}. Izraz \verb|if let| se prevodi 
-u \verb|match| izraz. Izraz \verb|impl| u parametrima funkcije se konvertuje u generički argument.
-Pojednostavljenje je način da se zaobidju granični slučajevi i smanji količina koda koja je potrebna 
-da se izvorni kod analizira.
+Обрадом проширеног облика апстрактног синтаксног стабла настаје међурепрезентација високог нивоа.
+Процес обраде се назива снижавање (\verb|lowering|). Неке синтаксне форме бивају поједностављене.
+Заграде се уклањају јер структура стабла експлицитно одређује редослед операција. \verb|For| петље 
+се конвертују у \verb|while(let)| петље \ref{lst:hir_iter}. Израз \verb|if let| се преводи 
+у \verb|match| израз. Израз \verb|impl| у параметрима функције се конвертује у генерички аргумент.
+Поједностављење је начин да се заобиђу гранични случајеви и смањи количина кода која је потребна 
+да се изворни код анализира.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -22,122 +22,122 @@ while let Some(elem) = iterator.next() {
     process(elem);
 }
 \end{minted}
-\caption{"for" petlja pre i nakon pojednostavljenja}
+\caption{"for" петља пре и након поједностављења}
 \label{lst:hir_iter}
 \end{listing}
 
-\verb|Crate| je ponovo čvor najvišeg nova ali za razliku \verb|Crate|-a apstraktnog sintaksnog stabla koji sadrži
-samo podatke o korenskom modulu, \verb|Crate| visoke medjureprezentacije skladišti sadržaj celokupnog paketa.
-Izvorni kod koji se ne koristi niti implicitno niti ekplicitno nije postojan unutar ovog pogleda. Značaj 
-ove osobine se najviše ispoljava prilikom upotrebe eksternih biblioteka, gde je uobičajno koristiti samo 
-deo funkcionalnosti.
+\verb|Crate| је поново чвор највишег нова али за разлику \verb|Crate|-а апстрактног синтаксног стабла који садржи
+само податке о коренском модулу, \verb|Crate| високе међурепрезентације складишти садржај целокупног пакета.
+Изворни код који се не користи нити имплицитно нити екплицитно није постојан унутар овог погледа. Значај 
+ове особине се највише испољава приликом употребе екстерних библиотека, где је уобичајно користити само 
+део функционалности.
 
-\subsubsection{Sitem upita}
+\subsubsection{Систем упита}
 
-\verb|HIR| je najkorišćeniji oblik izvornog koda u \verb|rustc| \verb|frontend|-u. Takodje je prvi oblik koji 
-koristi sistem upita (\verb|query|) i od izuzetne je važnosti prilikom inkrementalnog kompajliranja.
-Iz perspektive kompajlera znanje u vezi \verb|Crate|-a je baza podataka, dok su upiti način na koji 
-se dobavljaju podaci. Naime ključna razlika izmedju standardne baze podataka i "baze podataka" kompajlera
-to što "baza podataka" kompajlera počinje prazna i puni se kada se upiti izvrše. To znači da upit mora 
-da zna kako da izračuna izlaz u slučaju da rezultat ne postoji u "bazi podataka". "Baza podataka" kompajlera 
-se naziva kontekst upita.
+\verb|HIR| је најкоришћенији облик изворног кода у \verb|rustc| \verb|frontend|-у. Такође је први облик који 
+користи систем упита (\verb|query|) и од изузетне је важности приликом инкременталног компајлирања.
+Из перспективе компајлера знање у вези \verb|Crate|-а је база података, док су упити начин на који 
+се добављају подаци. Наиме кључна разлика између стандардне базе података и "базе података" компајлера
+то што "база података" компајлера почиње празна и пуни се када се упити изврше. То значи да упит мора 
+да зна како да израчуна излаз у случају да резултат не постоји у "бази података". "База података" компајлера 
+се назива контекст упита.
 
-Upit se identifikuje pomoću imena. Ključ specificira koji podatak treba da se dobavi i taj podatak 
-mora da poseduje povratni tip. Provajder je funkcija koja specificira kako se računa rezultat ukoliko nije 
-prethodno izračunat. Esencijalno, upit je funkcija koja mapira ključ na rezultat. 
-Povratne vrednosti upita se keširaju. Povratna vrednost bilo kojeg suksesivnog upita sa istim parametarima rezultovaće 
-kopiji već izračunate vrednosti unutar keša. Ovakva tehnika keširanja rezultata se naziva memoizacija.
-Keširanje je neophodno da bi sistem upita bio efikasan. Bez njega iste kalkulacije bi se ponavljale proizvoljan broj puta.
+Упит се идентификује помоћу имена. Кључ специфицира који податак треба да се добави и тај податак 
+мора да поседује повратни тип. Провајдер је функција која специфицира како се рачуна резултат уколико није 
+претходно израчунат. Есенцијално, упит је функција која мапира кључ на резултат. 
+Повратне вредности упита се кеширају. Повратна вредност било којег суксесивног упита са истим параметарима резултоваће 
+копији већ израчунате вредности унутар кеша. Оваква техника кеширања резултата се назива мемоизација.
+Кеширање је неопходно да би систем упита био ефикасан. Без њега исте калкулације би се понављале произвољан број пута.
 
-Da bi ovaj sistem funkcionisao na prethodno opisan način uvode se pojedina pravila. Ključ i rezultat 
-moraju biti nepromenljive vrednosti. Provajder mora biti deterministička funkcija, tj. upit za isti ključ
-uvek vraća istu vrednost. Jedini parametri upita jesu ključ i konstekst kompajliranja (baza podataka).
-Memoizacija je jedan od glavnih razloga za ova pravila. Ukoliko bi provajder mogao da vrati nedeterministički rezultat,
-tačnost keširanjog rezultata ne bi mogla biti zagarantovana.
+Да би овај систем функционисао на претходно описан начин уводе се поједина правила. Кључ и резултат 
+морају бити непроменљиве вредности. Провајдер мора бити детерминистичка функција, тј. упит за исти кључ
+увек враћа исту вредност. Једини параметри упита јесу кључ и констекст компајлирања (база података).
+Мемоизација је један од главних разлога за ова правила. Уколико би провајдер могао да врати недетерминистички резултат,
+тачност кеширањог резултата не би могла бити загарантована.
 
-Pozivi upita moraju da kreiraju direkcioni aciklični graf. Pošto su provajderi samo obične funkcije lako je pretvoriti 
-aciklični graf u ciklični dodavanjem funkcije koja kreira ciklus. Ranije je \verb|rustc| kompajler imao podršku 
-za prekidanje ciklusa i nastavkom rada, ali teoretski takvo izvršavanje nije determinističko i nije zasigurno da bi 
-inkrementalno kompajliranje radilo. Danas, sistem upita prijavljuje grešku da je pronadjen ciklus
-i ne nastavlja sa kompajliranjem.
+Позиви упита морају да креирају дирекциони ациклични граф. Пошто су провајдери само обичне функције лако је претворити 
+ациклични граф у циклични додавањем функције која креира циклус. Раније је \verb|rustc| компајлер имао подршку 
+за прекидање циклуса и наставком рада, али теоретски такво извршавање није детерминистичко и није засигурно да би 
+инкрементално компајлирање радило. Данас, систем упита пријављује грешку да је пронађен циклус
+и не наставља са компајлирањем.
 
-Rezultati upita mogu biti ukradeni, tj. rezultat se nalazi unutar strukture \verb|Steal<t>| i očekuje se da će se vlasništvo 
-preneti ka nekom drugom kontekstu u nekom trenutku. Ova tehnika se primarno koristi zbog performansi, 
-jer su neke vrednosti skupe za kloniranje. Ovaj postupak ne nanosi štetu u kontekstu inkrementalnog kompajliranja jer se pre 
-prenosa vlasnišva izvršavaju svi upiti koji bi mogli da potraže ovaj rezultat. Sa obzirom da se upiti koji traže rezultat 
-moraju navesti manuelno, prostor za grešku je veliki. Ukoliko je ukradeni rezultat potražen od nekog upita nakon što je preneto vlasništvo
-kompajler prijavljuje grešku, osiguravajući bezbedno stanje.
+Резултати упита могу бити украдени, тј. резултат се налази унутар структуре \verb|Steal<t>| и очекује се да ће се власништво 
+пренети ка неком другом контексту у неком тренутку. Ова техника се примарно користи због перформанси, 
+јер су неке вредности скупе за клонирање. Овај поступак не наноси штету у контексту инкременталног компајлирања јер се пре 
+преноса власнишва извршавају сви упити који би могли да потраже овај резултат. Са обзиром да се упити који траже резултат 
+морају навести мануелно, простор за грешку је велики. Уколико је украдени резултат потражен од неког упита након што је пренето власништво
+компајлер пријављује грешку, осигуравајући безбедно стање.
 
-\subsubsection{Inkrementalno kompajliranje}
+\subsubsection{Инкрементално компајлирање}
 
-Inkrementalno kompaljiranje se oslanja na strukturu direkcionog acikličnog grafa kroz "\verb|try|-\verb|mark|-\verb|green|" algoritam.
-Ovaj algoritam potiče od "\verb|red|-\verb|green|" algoritma. Ideja je da nakon svakog upita se sačuva rezultat upita ali i direkcioni 
-aciklični graf tog upita tj. rezultate upita koje je roditeljski upit pozvao. Prilikom suksesivnog pokretanja kompajlera potenicjalno 
-je moguće iskoristiti rezultat nekih upita iz prethodne kompilacije. Ovo se postriže dodeljivanjem boje svakom upitu. Ako se rezultat 
-upita promenio u odnosu na prethodni put, upit postaje crven. Ukoliko je rezultat isti kao i prethodni put, upit postaje zelen. 
-Iz ovoga proizilaze dva nova pravila. Ako su svi ulazi u upit isti, onda će i rezultat upita biti isti. Ovim se spašava značajno vreme 
-koje bi se inače potrošilo na čitanje i deserijalizovanje podataka sa diska. Nasuprot ovog pravila, ako se ulaz u upit promenio, 
-a i dalje je vratio isti rezultat, upit se boji u zeleno i zaobilazi se ponavljanje ovog upita.
+Инкрементално компаљирање се ослања на структуру дирекционог ацикличног графа кроз "\verb|try|-\verb|mark|-\verb|green|" алгоритам.
+Овај алгоритам потиче од "\verb|red|-\verb|green|" алгоритма. Идеја је да након сваког упита се сачува резултат упита али и дирекциони 
+ациклични граф тог упита тј. резултате упита које је родитељски упит позвао. Приликом суксесивног покретања компајлера потеницјално 
+је могуће искористити резултат неких упита из претходне компилације. Ово се постриже додељивањем боје сваком упиту. Ако се резултат 
+упита променио у односу на претходни пут, упит постаје црвен. Уколико је резултат исти као и претходни пут, упит постаје зелен. 
+Из овога произилазе два нова правила. Ако су сви улази у упит исти, онда ће и резултат упита бити исти. Овим се спашава значајно време 
+које би се иначе потрошило на читање и десеријализовање података са диска. Насупрот овог правила, ако се улаз у упит променио, 
+а и даље је вратио исти резултат, упит се боји у зелено и заобилази се понављање овог упита.
 
-Algoritam "\verb|try|-\verb|mark|-\verb|green|" radi na sledeći način. Proverava da li je upit izvršen u prethodnoj kompilaciji. Ako 
-nije, upit se evaluira i boji crvenom. Ako jeste, učitavaju se sva deca (zavisnosti) tog upita. Za svaku zavisnost upita rekurzivno 
-evaluirati boju istim redosledom kao i u prethodnoj kompilaciji. Ukoliko su sve zavisnosti zelene onda je i roditeljski upit zelen.
-Ako je bilo koji čvor u ovom procesu crven, roditeljski čvor je prljav. Izvršavaju se sve zavisnosti roditeljskog upita, a potom 
-poredi heš rezultata sa heš-om prethodnog rezultata. Ako se heš nije promenio roditeljski upit postaje zelen, u suprotnom crven.
+Алгоритам "\verb|try|-\verb|mark|-\verb|green|" ради на следећи начин. Проверава да ли је упит извршен у претходној компилацији. Ако 
+није, упит се евалуира и боји црвеном. Ако јесте, учитавају се сва деца (зависности) тог упита. За сваку зависност упита рекурзивно 
+евалуирати боју истим редоследом као и у претходној компилацији. Уколико су све зависности зелене онда је и родитељски упит зелен.
+Ако је било који чвор у овом процесу црвен, родитељски чвор је прљав. Извршавају се све зависности родитељског упита, а потом 
+пореди хеш резултата са хеш-ом претходног резултата. Ако се хеш није променио родитељски упит постаје зелен, у супротном црвен.
 
-Lažno pozitivne vrednosti su problem prilikom upotrebe ovakvog algoritma. Pretpostavlja se da upit "odredi znak" postoji i da su 
-ulazi početne i naredne kompilacije u ovaj upit redom brojevi 500 i 1000. Iako je očigledno da se znak nije promenio, kompajler 
-mora biti konzervativan i ponovo evaluairati rezultat ovog upita.
+Лажно позитивне вредности су проблем приликом употребе оваквог алгоритма. Претпоставља се да упит "одреди знак" постоји и да су 
+улази почетне и наредне компилације у овај упит редом бројеви 500 и 1000. Иако је очигледно да се знак није променио, компајлер 
+мора бити конзервативан и поново евалуаирати резултат овог упита.
 
-Kada kompajler prestane sa radom, sve evaluirane vrednosti u memoriji bivaju uništene. Stoga rezultati upita moraju da se čuvaju 
-na disku. Ovo dovodi do novih problema koji se moraju rešiti. Rezultati na disku nisu odmah spremni za poredjenje. Identifikatori 
-čvorova grafa izmedju kompilacija su potencijalno pomereni (\verb|NodeId|, \verb|DefId|). Perzistiranje na disk ima svoju cenu i 
-nije smisleno svaku sitnu informaciju čuvati na disku. 
+Када компајлер престане са радом, све евалуиране вредности у меморији бивају уништене. Стога резултати упита морају да се чувају 
+на диску. Ово доводи до нових проблема који се морају решити. Резултати на диску нису одмах спремни за поређење. Идентификатори 
+чворова графа између компилација су потенцијално померени (\verb|NodeId|, \verb|DefId|). Перзистирање на диск има своју цену и 
+није смислено сваку ситну информацију чувати на диску. 
 
-Ukoliko se kod nije menjao i redosled definicija/implementacija u kodu ostao isti generisani 
-identifikatori ostaju isti, ali ukoliko se bilo šta pomerilo ne postoji garancija da je i dalje tako. Ovaj problem se rešava 
-uvodjenjem stabilnih formi identifikatora. Za najbitniji slučaj \verb|DefId| stabilna zamena je \verb|DefPath|. \verb|DefPath| nije numerički 
-i oslanja se na putanju kao što je \verb|std::collections::HashMap|, čime nije afektovan nerelevantnim promenama u izvornom kodu. 
-\verb|DefPathHash| je 128 bitna reprezentacija \verb|DefPath|. Praktično gledano, obe reprezentacije sadrže istu informaciju pa se 
-\verb|DefPathHash| češće koristi jer je lakši za upotrebu. Prilikom deserijalizacije rezultata \verb|DefPathHash| se mapira na 
-\verb|DefId| iz trenutne kompilacije. \verb|HirId| je identifikator komponenti visoke reprezentacije koje nemaju \verb|DefId|. 
-\verb|HirId| je spoj \verb|DefPath| i \verb|LocalId|. \verb|LocalId| identifikuje izraz unutar neke stavke koda, na primer 
-definicija varijable unutar funkcije.
+Уколико се код није мењао и редослед дефиниција/имплементација у коду остао исти генерисани 
+идентификатори остају исти, али уколико се било шта померило не постоји гаранција да је и даље тако. Овај проблем се решава 
+увођењем стабилних форми идентификатора. За најбитнији случај \verb|DefId| стабилна замена је \verb|DefPath|. \verb|DefPath| није нумерички 
+и ослања се на путању као што је \verb|std::collections::HashMap|, чиме није афектован нерелевантним променама у изворном коду. 
+\verb|DefPathHash| је 128 битна репрезентација \verb|DefPath|. Практично гледано, обе репрезентације садрже исту информацију па се 
+\verb|DefPathHash| чешће користи јер је лакши за употребу. Приликом десеријализације резултата \verb|DefPathHash| се мапира на 
+\verb|DefId| из тренутне компилације. \verb|HirId| је идентификатор компоненти високе репрезентације које немају \verb|DefId|. 
+\verb|HirId| је спој \verb|DefPath| и \verb|LocalId|. \verb|LocalId| идентификује израз унутар неке ставке кода, на пример 
+дефиниција варијабле унутар функције.
 
-Prilikom izvršavanja "\verb|try|-\verb|mark|-\verb|green|" algoritma često se poredi rezultat upita trenutne kompilacije u odnosu 
-na rezultat upita u prethodnoj kompilaciji. Deserijalizacija rezultata sa diska je skupa operacija, a rezultat trenutnog upita je 
-već sračunat i može da se koristi. Kompajler prevazilazi ovaj problem upotrebom otisaka prista (\verb|fingerprint|). Otisak prsta 
-je 128 bitni heš rezultata upita. Jeftino je učitati celokupnu mapu otisaka prstiju prilikom učitavanja direkcionog acikličnog grafa 
-i poredjenje se svodi na jeftino uporedjivanje rezultata iz mape. Verovatnoća da se kolizija heš vrednosti dogodi je izuzetno mala 
-jer se koristi kvalitetan heš. Naime upotreba kvalitetnog heša dovodi da u nekim slučajevima inkrementalna kompilacija biva 
-sporija od neinkrementalne usled vremena provedenog u računanju heš vrednosti. Otisci prstiju se koriste prilikom korelacije 
-izmedju čvora prethodnog i trenutnog direkcionog acikličnog grafa, tako što se otisak prsta računa nad ključem upita.
+Приликом извршавања "\verb|try|-\verb|mark|-\verb|green|" алгоритма често се пореди резултат упита тренутне компилације у односу 
+на резултат упита у претходној компилацији. Десеријализација резултата са диска је скупа операција, а резултат тренутног упита је 
+већ срачунат и може да се користи. Компајлер превазилази овај проблем употребом отисака приста (\verb|fingerprint|). Отисак прста 
+је 128 битни хеш резултата упита. Јефтино је учитати целокупну мапу отисака прстију приликом учитавања дирекционог ацикличног графа 
+и поређење се своди на јефтино упоређивање резултата из мапе. Вероватноћа да се колизија хеш вредности догоди је изузетно мала 
+јер се користи квалитетан хеш. Наиме употреба квалитетног хеша доводи да у неким случајевима инкрементална компилација бива 
+спорија од неинкременталне услед времена проведеног у рачунању хеш вредности. Отисци прстију се користе приликом корелације 
+између чвора претходног и тренутног дирекционог ацикличног графа, тако што се отисак прста рачуна над кључем упита.
 
-Dešava se da neki čvorovi izmedju dve kompilacije ne budu evaluirani jer su čvorovi samo zavisnosti roditelja koji je obojen 
-zelenom. Prateći prethodno opisan algoritam dobilo bi se da novi direkcioni aciklični graf ne sadrži više ove zavisnosti. Zbog 
-toga se primenjuje promocija keša. Pre nego što se rezultat inkrementalne kompilacije prebaci na disk, izvršiće se prolazak 
-kroz sve zavisonosti svakog zelenog čvora i postaraće se da su učitani u memoriju. Na ovaj način zavisnosti koje trenutno 
-nisu možda neophodne mogu biti iskorišćene u budućim kompilacijama. 
+Дешава се да неки чворови између две компилације не буду евалуирани јер су чворови само зависности родитеља који је обојен 
+зеленом. Пратећи претходно описан алгоритам добило би се да нови дирекциони ациклични граф не садржи више ове зависности. Због 
+тога се примењује промоција кеша. Пре него што се резултат инкременталне компилације пребаци на диск, извршиће се пролазак 
+кроз све зависоности сваког зеленог чвора и постараће се да су учитани у меморију. На овај начин зависности које тренутно 
+нису можда неопходне могу бити искоришћене у будућим компилацијама. 
 
-Upiti mogu da sadrže modifikatore koji utiču na to kako se sistem upita ophodi prema upitu prilikom inkrementalne kompilacije.
-Modifikator \verb|eval_always| označava da upiti nikada neće biti zelen i preskače se prilikom "\verb|try|-\verb|mark|-\verb|green|".
-Ovaj modifikator je koristan u slučaju da upit čita vrednost iz nekog fajla ili globalnog stanja gde može doći do mutacija. Takodje neki 
-upiti zavise od celokupnog izvornog koda i nema potrebe pokušavati keširati rezultat jer će uvek boja biti crvena. Modifikator 
-\verb|no_hash| označava da za upit nikada neće biti računat otisak prsta. Iz ovoga sledi da svaki upit koji zavisi od \verb|no_hash|
-upita mora biti rekalkulisan. Ovaj modifikator je koristan u slučaju kada bi se otisak prsta računao nad velikim i kompleksnim 
-vrednostima gde bi ovaj postupak trajao dugo. Takodje za funkcije koje su veoma osetljive na promene upita (a * b * c), promena 
-ulaza će skoro uvek rezultovati crvenoj boji čvora. Modifikator \verb|cache_on_disk_if| odredjuje da li će rezultat upita biti 
-sačuvan na disku. 
+Упити могу да садрже модификаторе који утичу на то како се систем упита опходи према упиту приликом инкременталне компилације.
+Модификатор \verb|eval_always| означава да упити никада неће бити зелен и прескаче се приликом "\verb|try|-\verb|mark|-\verb|green|".
+Овај модификатор је користан у случају да упит чита вредност из неког фајла или глобалног стања где може доћи до мутација. Такође неки 
+упити зависе од целокупног изворног кода и нема потребе покушавати кеширати резултат јер ће увек боја бити црвена. Модификатор 
+\verb|no_hash| означава да за упит никада неће бити рачунат отисак прста. Из овога следи да сваки упит који зависи од \verb|no_hash|
+упита мора бити рекалкулисан. Овај модификатор је користан у случају када би се отисак прста рачунао над великим и комплексним 
+вредностима где би овај поступак трајао дуго. Такође за функције које су веома осетљиве на промене упита (а * б * ц), промена 
+улаза ће скоро увек резултовати црвеној боји чвора. Модификатор \verb|cache_on_disk_if| одређује да ли ће резултат упита бити 
+сачуван на диску. 
 
-Modifikatori \verb|eval_always| i \verb|no_hash| mogu biti zajedno korišćeni u šablonu koji se naziva projekcionim upiti. Postoje upiti koji zahtevaju 
-celokupan ulaz kompajlera (indeksiran \verb|HIR|). Ovakvi upiti se često modeluju tako što se veliki upit makira sa \verb|eval_always|
-da bi se sačuvalo vreme. Zavisnosti upita (projekcije) su upiti koje zasebno mogu biti obojene crveno ili zeleno. Time se omogućava 
-da neke projekcije budu crvene i evaluirana ponovo dok ostale zelene projekcije mogu da iskoriste prethodni rezultat.
+Модификатори \verb|eval_always| и \verb|no_hash| могу бити заједно коришћени у шаблону који се назива пројекционим упити. Постоје упити који захтевају 
+целокупан улаз компајлера (индексиран \verb|HIR|). Овакви упити се често моделују тако што се велики упит макира са \verb|eval_always|
+да би се сачувало време. Зависности упита (пројекције) су упити које засебно могу бити обојене црвено или зелено. Тиме се омогућава 
+да неке пројекције буду црвене и евалуирана поново док остале зелене пројекције могу да искористе претходни резултат.
 
 \begin{listing}[H]
 \begin{center}
-\includegraphics[width=4in, height=1.6in]{assets/images/projection_query.png}
+\includegraphics[width=4in, height=1.4in]{assets/images/projection_query.png}
 \end{center}
-\caption{Upotreba "eval\_always" modifikatora u projekcionom šablonu}
+\caption{Употреба "eval\_always" модификатора у пројекционом шаблону}
 \label{lst:projection_query}
 \end{listing}

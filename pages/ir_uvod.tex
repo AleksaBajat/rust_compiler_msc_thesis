@@ -1,50 +1,50 @@
-\section{Medjureprezentacije izvornog koda}
+\section{Међурепрезентације изворног кода}
 
-Prilikom kompajliranja \verb|Rust| izvornog koda, \verb|Rust| \verb|frontend| mora da osigura da je 
-kod sintaktički i semantički tačan da bi mogao da izgeneriše pravilnu \verb|LLVM| medju reprezentaciju 
-na osnovu koje se generiše mašinski kod. Da bi se ovo efektivno izvelo \verb|Rust| \verb|frontend| poseduje 
-sopstvene medjureprezentacije koje obavljaju distinktne dužnosti. 
+Приликом компајлирања \verb|Rust| изворног кода, \verb|Rust| \verb|frontend| мора да осигура да је 
+код синтактички и семантички тачан да би могао да изгенерише правилну \verb|LLVM| међу репрезентацију 
+на основу које се генерише машински код. Да би се ово ефективно извело \verb|Rust| \verb|frontend| поседује 
+сопствене међурепрезентације које обављају дистинктне дужности. 
 
-Leksički analizator ili lekser je ulazna tačka kompajlera. Lekser čita izvorni kod kao tok karaktera i grupiše karaktere 
-u sekvence koje imaju značenje. Ovaj proces se naziva leksička analiza ili skeniranje, a sekvence karaktera se nazivaju lekseme. 
-Za svaku leksemu leksički analizator proizvodi token. Tokeni se obično sastoje od tipa i vrednosti.
-Leksički analizator je obično najjednostavniji deo kompajlera za implementirati. 
-Uobičajno je da se lekseri programskih jezika implementiraju kao konačni automat uz pomoć alata kao što 
-je \verb|Flex|. Ipak, u \verb|Rust| jeziku lekser je implementiran ručno, što omogućava finu granularnost 
-i visoku kontrolu nad procesom tokenizacije. Imajući u vidu da je jedan od ciljeva \verb|Rust| jezika 
-da poseduje veoma detaljne i korisne poruke o grešci, ovo je vrlo promišljena implementaciona odluka. 
-Tok tokena nije naročito korisna forma za analizu.
+Лексички анализатор или лексер је улазна тачка компајлера. Лексер чита изворни код као ток карактера и групише карактере 
+у секвенце које имају значење. Овај процес се назива лексичка анализа или скенирање, а секвенце карактера се називају лексеме. 
+За сваку лексему лексички анализатор производи токен. Токени се обично састоје од типа и вредности.
+Лексички анализатор је обично најједноставнији део компајлера за имплементирати. 
+Уобичајно је да се лексери програмских језика имплементирају као коначни аутомат уз помоћ алата као што 
+је \verb|Flex|. Ипак, у \verb|Rust| језику лексер је имплементиран ручно, што омогућава фину грануларност 
+и високу контролу над процесом токенизације. Имајући у виду да је један од циљева \verb|Rust| језика 
+да поседује веома детаљне и корисне поруке о грешци, ово је врло промишљена имплементациона одлука. 
+Ток токена није нарочито корисна форма за анализу.
 
-Naredni korak u procesu kompaljiranja jeste parser koji vrši sintaksnu analizu ili parsiranje. 
-Parser koristi tokene koje je izgenerisao lekser da bi kreirao strukturu oblika stabla koja se naziva 
-apstraktno sintaksno stablo. Apstraktno sintaksno stablo eksplicitno naznačava prvenstvo operatora,
-i relativno ga je lako validirati.
+Наредни корак у процесу компаљирања јесте парсер који врши синтаксну анализу или парсирање. 
+Парсер користи токене које је изгенерисао лексер да би креирао структуру облика стабла која се назива 
+апстрактно синтаксно стабло. Апстрактно синтаксно стабло експлицитно назначава првенство оператора,
+и релативно га је лако валидирати.
 
-Poslednji korak u \verb|Rust| \verb|frontend|-u jeste semantička analiza. Semantička analiza se sprovodi 
-kroz tri medjureprezentacije, reprezentacija visokog nivoa, tipizirana reprezentacija visokog nivoa
-i reprezentacija srednjeg nivoa. Bitan deo semantičke analize jeste provera tipova gde kompajler proverava 
-da li svaki operator ima operande koji se poklapaju. U drugim jezicima često je postojanje implicitnih 
-konverzija jednog tipa u drugi, ova funkcionalnost nije postojana u \verb|Rust| jeziku. Svaka konverzija 
-mora biti eksplicitno navedena od strane korisnika.
+Последњи корак у \verb|Rust| \verb|frontend|-у јесте семантичка анализа. Семантичка анализа се спроводи 
+кроз три међурепрезентације, репрезентација високог нивоа, типизирана репрезентација високог нивоа
+и репрезентација средњег нивоа. Битан део семантичке анализе јесте провера типова где компајлер проверава 
+да ли сваки оператор има операнде који се поклапају. У другим језицима често је постојање имплицитних 
+конверзија једног типа у други, ова функционалност није постојана у \verb|Rust| језику. Свака конверзија 
+мора бити експлицитно наведена од стране корисника.
 
-U tipično struktuiranom kompajleru svaka od prethodno navedenih medjureprezentacija koda predstavlja 
-poseban program i zasebno izvršavanje. Ovakvi kompajleri se nazivaju 
-kompajleri zasnovani na prolascima. \verb|Rust|-ov kompajler je u tranziciji izmedju 
-kompajlera zanovanog na prolascima i kompajlera zasnovanog na potražnji. Kompajler 
-zasnovan na potražnji umesto da radi na principu arhitekture sa cevima (\verb|pipeline|)
-koristi upite (\verb|query|) nad izvornim kodom i simultono izvršava celokupan proces.
+У типично структуираном компајлеру свака од претходно наведених међурепрезентација кода представља 
+посебан програм и засебно извршавање. Овакви компајлери се називају 
+компајлери засновани на проласцима. \verb|Rust|-ов компајлер је у транзицији између 
+компајлера занованог на проласцима и компајлера заснованог на потражњи. Компајлер 
+заснован на потражњи уместо да ради на принципу архитектуре са цевима (\verb|pipeline|)
+користи упите (\verb|query|) над изворним кодом и симултоно извршава целокупан процес.
 
-Izvršavanje upita je memoizovano. Prvi put kada se upit pozove, izvršiće se komputacije 
-vezane za taj upit. Naredni poziv istog upita rezultat dobavlja iz rečnika.
-Ovakav princip izvršavanja se savršeno uklapa u okvir inkrementalne kompilacije. 
-Rezultat prethodne kompilacije se čuva u masovnoj memoriji (skladištu) koji se može iskoristi
-u trenutnoj kompilaciji.
+Извршавање упита је мемоизовано. Први пут када се упит позове, извршиће се компутације 
+везане за тај упит. Наредни позив истог упита резултат добавља из речника.
+Овакав принцип извршавања се савршено уклапа у оквир инкременталне компилације. 
+Резултат претходне компилације се чува у масовној меморији (складишту) који се може искористи
+у тренутној компилацији.
 
-Trenutno se svaka reprezentacija izvornog koda na \verb|frontend|-u, 
-nakon kreiranja apstraktnog sintaksnog stabla, zasniva na upitima. 
-Lekser i parser još uvek funkcionišu na osnovu prolazaka, 
-ali cilj je da se i oni refaktorišu kako bi koristili upite.
+Тренутно се свака репрезентација изворног кода на \verb|frontend|-у, 
+након креирања апстрактног синтаксног стабла, заснива на упитима. 
+Лексер и парсер још увек функционишу на основу пролазака, 
+али циљ је да се и они рефакторишу како би користили упите.
 
-Ulazna tačka kompajlera u \verb|rustc| izvornom kodu se nalazi u \verb|rustc_driver_impl| \verb|crate|-u
-koji poseduje funkciju \verb|run_compiler|. Ova funkcija daje veoma dobar pregled toka kompajliranja 
-i značajna je tačka prlikom upoznavanja sa izvornim kodom. 
+Улазна тачка компајлера у \verb|rustc| изворном коду се налази у \verb|rustc_driver_impl| \verb|crate|-у
+који поседује функцију \verb|run_compiler|. Ова функција даје веома добар преглед тока компајлирања 
+и значајна је тачка прликом упознавања са изворним кодом. 

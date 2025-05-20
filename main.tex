@@ -12,21 +12,24 @@
 \usepackage{fontspec}
 \usepackage{multicol}
 \usepackage{hyphenat}
+\usepackage{polyglossia}
 
-\setmainfont{Carlito}
+\newfontfamily{\cyrillicfont}{Liberation Serif}
+\newfontfamily{\cyrillicfonttt}{Liberation Serif}
+\setdefaultlanguage{serbian}
 \sectionfont{\fontsize{24}{30}\selectfont}  % 24pt size, 30pt line spacing
 \subsectionfont{\fontsize{18}{24}\selectfont}
 \subsubsectionfont{\fontsize{14}{18}\selectfont}
-\renewcommand{\listingscaption}{Izvorni kod}
-\renewcommand{\listoflistingscaption}{Spisak izvornih kodova}
+\renewcommand{\listingscaption}{Изворни код}
+\renewcommand{\listoflistingscaption}{Списак изворних кодова}
 \pagestyle{fancy}
 \fancyhf{}
-\fancyfoot[L]{\fontsize{11}{13}\selectfont Aleksa Bajat, Medjureprezentacije izvornog koda u prednjem kraju (frontend-u) rustc kompajlera}
+\fancyfoot[L]{\fontsize{11}{13}\selectfont Алекса Бајат, Међурепрезентације изворног кода у фронтенду rustc компајлера}
 \fancyfoot[R]{\newline\fontsize{11}{13}\selectfont \thepage}
 
-\title{Medjureprezentacije izvornog koda u prednjem kraju (frontend-u) rustc kompajlera}
-\author{Aleksa Bajat}
-\date{November 2024}
+\title{Међурепрезентације изворног кода у фронтенду rustc компајлера}
+\author{Алекса Бајат}
+\date{Мај 2025}
 
 \begin{document}
 

@@ -1,27 +1,27 @@
-\subsection{Medjureprezentacija srednjeg nivoa (MSN) - Mid-Level Intermediate Representation (MIR)}
+\subsection{Међурепрезентација средњег нивоа (МСН) - Mid-Level Intermediate Representation (MIR)}
 
-Koncept medjureprezentacije srednjeg nivoa nije postojao od samog nastanka kompajlera. Prvobitno je koristio apstraktno sintaksno stablo 
-iz inicijalnog parsiranja sve do finalne generacije bitkoda. Ovaj metod je dovodio do brojnih problema. Apstraktno sintaksno stablo i reprezentacija 
-visokog nivoa su izgledom veoma slični izvornom kodu. Prevođenje sintaktičkog šećera na osnovni konstrukt nije imalo predodređeno mesto za čuvanje. 
-Stoga svaka faza koja je morala da rasuđuje nešto na osnovu koda (npr. provera tipova, generisanje koda) je morala da simulira prevođenje od početka.
-Sa obzirom da bi svaka faza morala biti upoznata sa svakim specijalnim slučajem prevođenja, krajnji rezultat uprošćavanja šećera bi činilo kompajler 
-kompleksnijim, a ne jednostavnijim. Rasuđivanje kontrole toka preko apstraktnog sintaksnog stabla je veoma kompleksno. Graf kontrole toka se kreirao
-iznad ASS-a, koristo se za analizu ali ne i tokom prevođenja, čime se analiziran graf kontrole toka nije morao podudarati sa grafom kontrole toka generisanog koda. 
-Postojala su brojna mesta na kojima bi bilo efikasno upotrebiti Rust specifično znanje za izvršavanje optimizacija gde bi postojanje srednjeg sloja značajno pomoglo.
-Migriranje od LLVM-a je bilo praktično nemoguće jer je semantika Rust jezika spojena sa korakom prevođenja u LLVM medjureprezentaciju.
-Formalni dokazi su jedan od načina na koji bi Rust voleo da garantuje bezbednost, i samim time prethodno navedena, uvek promenljiva 
-osnova nije podobna za ovaj posao.
+Концепт међурепрезентације средњег нивоа није постојао од самог настанка компајлера. Првобитно је користио апстрактно синтаксно стабло 
+из иницијалног парсирања све до финалне генерације биткода. Овај метод је доводио до бројних проблема. Апстрактно синтаксно стабло и репрезентација 
+високог нивоа су изгледом веома слични изворном коду. Превођење синтактичког шећера на основни конструкт није имало предодређено место за чување. 
+Стога свака фаза која је морала да расуђује нешто на основу кода (нпр. провера типова, генерисање кода) је морала да симулира превођење од почетка.
+Са обзиром да би свака фаза морала бити упозната са сваким специјалним случајем превођења, крајњи резултат упрошћавања шећера би чинило компајлер 
+комплекснијим, а не једноставнијим. Расуђивање контроле тока преко апстрактног синтаксног стабла је веома комплексно. Граф контроле тока се креирао
+изнад АСС-а, користо се за анализу али не и током превођења, чиме се анализиран граф контроле тока није морао подударати са графом контроле тока генерисаног кода. 
+Постојала су бројна места на којима би било ефикасно употребити \verb|Rust| специфично знање за извршавање оптимизација где би постојање средњег слоја значајно помогло.
+Мигрирање од ЛЛВМ-а је било практично немогуће јер је семантика \verb|Rust| језика спојена са кораком превођења у ЛЛВМ међурепрезентацију.
+Формални докази су један од начина на који би \verb|Rust| волео да гарантује безбедност, и самим тиме претходно наведена, увек променљива 
+основа није подобна за овај посао.
 
-Naime, uvođenje još jedne međureprezentacije ne dolazi bez mana. Konvertovanje iz ASS-a u MSN uvodi dodatno vreme prilikom kompajliranja. Više truda je potrebno 
-da bi se kreirale kvalitetne poruke o problemima unutar koda jer je MSN značajno drugačije strukture od onoga što je korisnik uneo.
+Наиме, увођење још једне међурепрезентације не долази без мана. Конвертовање из АСС-а у МСН уводи додатно време приликом компајлирања. Више труда је потребно 
+да би се креирале квалитетне поруке о проблемима унутар кода јер је МСН значајно другачије структуре од онога што је корисник унео.
 
-\subsubsection{Graf kontrole toka}
+\subsubsection{Граф контроле тока}
 
-Danas, srednju medjureprezentaciju čini skup fajlova (kada se potraži od kompajlera) gde svaki opisuje izvršavanje jedne funkcije i direktno je vezan za graf kontrole toka. Graf kontrole toka je 
-struktuiran kao grupa osnovnih blokova koji su povezani granama. Ključna ideja bloka jeste da je to grupa naredbi (iskaza) 
-koja se izvršava zajedno. Svaki put kada se granom dodje do novog bloka, sve naredbe tog bloka moraju da se izvrše, pa tek onda postoji mogućnost 
-da se grana dalje. Poslednja nareba unutar bloka se naziva terminator. Brojni izrazi \ref{lst:block_code} koji se koriste u Rust jeziku se kompajliraju na 
-više osnovnih blokova \ref{lst:block_block}.
+Данас, средњу међурепрезентацију чини скуп фајлова (када се потражи од компајлера) где сваки описује извршавање једне функције и директно је везан за граф контроле тока. Граф контроле тока је 
+структуиран као група основних блокова који су повезани гранама. Кључна идеја блока јесте да је то група наредби (исказа) 
+која се извршава заједно. Сваки пут када се граном дође до новог блока, све наредбе тог блока морају да се изврше, па тек онда постоји могућност 
+да се грана даље. Последња нареба унутар блока се назива терминатор. Бројни изрази \ref{lst:block_code} који се користе у \verb|Rust| језику се компајлирају на 
+више основних блокова \ref{lst:block_block}.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -33,7 +33,7 @@ if some_variable {
 }
 d = 1;
 \end{minted}
-\caption{Isečak koda koji se prevodi u više osnovnih blokova}
+\caption{Исечак кода који се преводи у више основних блокова}
 \label{lst:block_code}
 \end{listing}
 
@@ -61,23 +61,23 @@ BB3: {
     ...
 }
 \end{minted}
-\caption{Isečak koda u formi osnovih blokova}
+\caption{Исечак кода у форми основних блокова}
 \label{lst:block_block}
 \end{listing}
 
-Stek (\verb|Stack|) je LIFO (\verb|Last in First Out|) struktura podataka koju kompajler koristi da skladišti argumente funkcija,
-lokalne promenljive i privremene promenljive. U MSN reprezentaciji memorijske lokacije na steku su identifikovane pomoću indeksa. 
-Indeks se označava celobrojnom vrednošću koju prethodi donja crta (npr. \verb|_1|, \verb|_2|). Indeks \verb|_0| je specijalan, u njemu
-se skladišti povratna vrednost. Mesta su izrazi koji identifikuju lokaciju u memoriji. Mesto može biti sam indeks (\verb|_1|) ili može biti
-projekcija (\verb|_1.polje|). Projekcije su polja ili druge konstrukcije koje proizilaze iz mesta. Pristup polju je projekcija, za \verb|_1.polje|, \verb|_1| je mesto dok je \verb|polje| projekcioni element.
-Dereferenciranje je takođe projekcija, za \verb|*_1|, \verb|_1| je mesto dok je \verb|*| projekcioni element. 
-Desne vrednosti (\verb|RValues|) su izrazi koji generišu vrednost. Zovu se desne vrednosti zato što 
-stoje sa desne strane operatora dodele (\verb|=|). Operandi su argumenti desne vrednosti. Argument može biti konstanta ili mesto (kao što je \verb|_1|).
+Стек (\verb|Stack|) је ЛИФО (\verb|Last in First Out|) структура података коју компајлер користи да складишти аргументе функција,
+локалне променљиве и привремене променљиве. У МСН репрезентацији меморијске локације на стеку су идентификоване помоћу индекса. 
+Индекс се означава целобројном вредношћу коју претходи доња црта (нпр. \verb|_1|, \verb|_2|). Индекс \verb|_0| је специјалан, у њему
+се складишти повратна вредност. Места су изрази који идентификују локацију у меморији. Место може бити сам индекс (\verb|_1|) или може бити
+пројекција (\verb|_1.polje|). Пројекције су поља или друге конструкције које произилазе из места. Приступ пољу је пројекција, за \verb|_1.polje|, \verb|_1| је место док је \verb|polje| пројекциони елемент.
+Дереференцирање је такође пројекција, за \verb|*_1|, \verb|_1| је место док је \verb|*| пројекциони елемент. 
+Десне вредности (\verb|RValues|) су изрази који генеришу вредност. Зову се десне вредности зато што 
+стоје са десне стране оператора доделе (\verb|=|). Операнди су аргументи десне вредности. Аргумент може бити константа или место (као што је \verb|_1|).
 
-Strukturu srednje medjureprezentacije je najlakše razumeti prevodjenjem jednostavnih programa poput \ref{lst:snippet-before-mir}. U dodatku \ref{lst:unoptimized-mir} se nalazi neoptimizovana njegova srednja medjureprezentacija. Glavna razlika izmedju optimizovane i neoptimizovanje srednje medjureprezentacije jeste to što neoptimizovana medjureprezentacija sadrži eksplicitne iskaze \verb|StorageLive| i \verb|StorageDead| unutar osnovnih blokova. Iskaz \verb|StorageLive| pruža informaciju da je promenljiva navedena u iskazu živa tj.
-da ju je moguće koristiti u daljem izvršavanju. Iskaz \verb|StorageDead| pruža informaciju da je promenljiva navedena u iskazu mrtva
-tj. nije je više moguće koristiti. Samim time ovo se pokazuje kao pravo mesto da se sprovodi dealokacija memorije.
-Jedina informacija koju srednja reprezentacija ne zna eksplicitno jeste da li se dogodio prenos vlasništva. Ovu informaciju dobija na osnovu tipa promenljive.
+Структуру средње међурепрезентације је најлакше разумети превођењем једноставних програма попут \ref{lst:snippet-before-mir}. У додатку \ref{lst:unoptimized-mir} се налази неоптимизована његова средња међурепрезентација. Главна разлика између оптимизоване и неоптимизовање средње међурепрезентације јесте то што неоптимизована међурепрезентација садржи експлицитне исказе \verb|StorageLive| и \verb|StorageDead| унутар основних блокова. Исказ \verb|StorageLive| пружа информацију да је променљива наведена у исказу жива тј.
+да ју је могуће користити у даљем извршавању. Исказ \verb|StorageDead| пружа информацију да је променљива наведена у исказу мртва
+тј. није је више могуће користити. Самим тиме ово се показује као право место да се спроводи деалокација меморије.
+Једина информација коју средња репрезентација не зна експлицитно јесте да ли се догодио пренос власништва. Ову информацију добија на основу типа променљиве.
 
 \begin{listing}[H]
 \begin{minted}{text}
@@ -87,21 +87,22 @@ fn main() {
     vec.push(2);
 }
 \end{minted}
-\caption{Isečak koda koji se prevodi u MSN}
+\caption{Исечак кода који се преводи у МСН}
 \label{lst:snippet-before-mir}
 \end{listing}
 
-\subsubsection{Optimizacija koda u MSN-u}
+\subsubsection{Оптимизација кода у МСН-у}
 
-Reprezentacija srednjeg nivoa u Rust kompajleru igra ključnu ulogu u optimizaciji koda pre njegove predaje LLVM bekendu. 
-Generiše se iz TMVN-a i fokusira se isključivo na izvršni kod. Jedna od glavnih prednosti MSN-a je omogućavanje optimizacija specifičnih za Rust koje bi bilo teško 
-sprovesti direktno na nivou LLVM IR-a. MSN pruža osnovu za analizu bezbedne primene optimizacija, 
-jasno razdvajajući semantiku jezika od LLVM bekenda. MSN teži da pojednostavi reprezentaciju koda, potencijalno olakšavajući formalne dokaze u budućnosti.
+Репрезентација средњег нивоа у \verb|Rust| компајлеру игра кључну улогу у оптимизацији кода пре његове предаје ЛЛВМ бекенду. 
+Генерише се из ТМВН-а и фокусира се искључиво на извршни код. Једна од главних предности МСН-а је омогућавање оптимизација специфичних за \verb|Rust| које би било тешко 
+спровести директно на нивоу ЛЛВМ ИР-а. МСН пружа основу за анализу безбедне примене оптимизација, 
+јасно раздвајајући семантику језика од ЛЛВМ бекенда. МСН тежи да поједностави репрезентацију кода, потенцијално олакшавајући формалне доказе у будућности.
 
-Proces generisanja MSN-a rekurzivno obrađuje izraze iz TMVN-a. Odličan primer optimizacije i pojednostavljenja koje MSN omogućava je 
-transformacija petlji. Na primer, \verb|for| petlja, koja se u ranijoj fazi MVN-a može svodi na \verb|while let| konstrukciju,
-u MSN-u inicijalno biva transformisana u ekvivalentnu \verb|loop| petlju sa \verb|match| izrazom unutar nje:
+Процес генерисања МСН-а рекурзивно обрађује изразе из ТМВН-а. Одличан пример оптимизације и поједностављења које МСН омогућава је 
+трансформација петљи. На пример, \verb|for| петља, која се у ранијој фази МВН-а може своди на \verb|while let| конструкцију,
+у МСН-у иницијално бива трансформисана у еквивалентну \verb|loop| петљу са \verb|match| изразом унутар ње:
 
+\begin{listing}[H]
 \begin{minted}{rust}
 let mut iterator = IntoIterator::into_iter(vec);
 loop {
@@ -111,13 +112,17 @@ loop {
     }
 }
 \end{minted}
+\caption{Оптимизација превођењем for петље у loop и match наредбе}
+\label{lst:optimization-0}
+\end{listing}
 
-Ova struktura preslikava semantiku \verb|while let|, ali MSN ide korak dalje u pojednostavljenju kontrole toka. Uvode se eksplicitne \verb|goto| 
-naredbe i labele. Iako je \verb|goto| ključna reč koja nije dozvoljena u izvornom Rust kodu zbog potencijalnog narušavanja čitljivosti i 
-otežanog praćenja toka izvršavanja u kompleksnim programima, u internoj reprezentaciji poput MSN-a on svodi petlje i grananja na najosnovnije 
-operacije skoka. Ovo čini graf kontrole toka eksplicitnim i lakšim za analizu i dalju transformaciju od strane kompajlera. 
-Petlja iz prethodnog primera sada izgleda ovako:
+Ова структура пресликава семантику \verb|while let|, али МСН иде корак даље у поједностављењу контроле тока. Уводе се експлицитне \verb|goto| 
+наредбе и лабеле. Иако је \verb|goto| кључна реч која није дозвољена у изворном \verb|Rust| коду због потенцијалног нарушавања читљивости и 
+отежаног праћења тока извршавања у комплексним програмима, у интерној репрезентацији попут МСН-а он своди петље и гранања на најосновније 
+операције скока. Ово чини граф контроле тока експлицитним и лакшим за анализу и даљу трансформацију од стране компајлера. 
+Петља из претходног примера сада изгледа овако:
 
+\begin{listing}[H]
 \begin{minted}{rust}
 let mut iterator = IntoIterator::into_iter(vec);
 
@@ -129,16 +134,18 @@ loop:
 
 break: 
 \end{minted}
+\caption{Оптимизација увођењем кључне речи goto}
+\label{lst:optimization-1}
+\end{listing}
 
-Poslednji korak u ovom primeru je pojednostavljenje \verb|match| izraza, koji je i dalje relativno kompleksna sintaktička celina. 
-Dok \verb|match| u izvornom kodu grupiše proveru obrasca i pristup podacima unutar njega, 
-MSN ga razdvaja radi veće granularnosti i jednostavnosti osnovnih operacija. 
-Uvodi se primitivna \verb|switch| naredba (koja nije dostupna u izvornom Rust-u) koja se bavi isključivo proverom diskriminante 
-(da li je rezultat \verb|Some| ili \verb|None|). Pristup podacima unutar varijante 
-(izdvajanje vrednosti \verb|elem| iz \verb|Some|) obavlja se kao zasebna operacija unutar odgovarajuće grane kontrole toka:
+Последњи корак у овом примеру је поједностављење \verb|match| израза, који је и даље релативно комплексна синтактичка целина. 
+Док \verb|match| у изворном коду групише проверу обрасца и приступ подацима унутар њега, 
+МСН га раздваја ради веће грануларности и једноставности основних операција. 
+Уводи се примитивна \verb|switch| наредба (која није доступна у изворном \verb|Rust|-у) која се бави искључиво провером дискриминанте 
+(да ли је резултат \verb|Some| или \verb|None|). Приступ подацима унутар варијанте 
+(издвајање вредности \verb|elem| из \verb|Some|) обавља се као засебна операција унутар одговарајуће гране контроле тока:
 
-\break
-
+\begin{listing}[H]
 \begin{minted}{rust}
 let mut iterator = IntoIterator::into_iter(vec);
 
@@ -158,25 +165,28 @@ loop:
     
 break:
 \end{minted}
+\caption{Оптимизација увођењем Switch наредбе}
+\label{lst:optimization-2}
+\end{listing}
 
 
-Veoma je često da prilikom \verb|debug|-ovanja srednje reprezentacije potreban prikaz samo jedne funkcije
-umesto celokupnog prevoda. Za prikaz celokupnog izlaza koristi se \verb|all| filter, dok ako je neka pojedinačna funkcija od interesovanja
-njeno ime.
+Веома је често да приликом \verb|debug|-овања средње репрезентације потребан приказ само једне функције
+уместо целокупног превода. За приказ целокупног излаза користи се \verb|all| филтер, док ако је нека појединачна функција од интересовања
+њено име.
 
 \begin{listing}[H]
 \begin{minted}{bash}
 cargo rustc -- -Z dump-mir=[filter] -Z dump-mir-graphviz
 \end{minted}
-\caption{Ispis i prikaz MSN-a}
+\caption{Испис и приказ МСН-а}
 \label{lst:mir_print}
 \end{listing}
 
-\subsubsection{Neleksički životni vekovi}
+\subsubsection{Нелексички животни векови}
 
-Pozajmljivač (\verb|borrow-checker|) nalaže da se pozajmljena vrednost ne može mutirati niti joj se može promeniti vlasništvo. Svaki put kada se vrednost pozajmi kreira se životni vek njene reference. 
-Životni vek reference se odnosi na mesto koda gde bi se referenca mogla koristiti. Kompajler će se potruditi da evaluira najmanji opseg koji pokriva svako potencijalno korišćenje reference.
-Životni vek može da se odnosi i na vrednost i na referencu. Da bi bilo jasno o čemu se govori, životni vek će se odnositi na životni vek reference, dok će se opseg odnositi na životni vek vrednosti \ref{lst:scope-lifetime}.
+Позајмљивач (\verb|borrow-checker|) налаже да се позајмљена вредност не може мутирати нити јој се може променити власништво. Сваки пут када се вредност позајми креира се животни век њене референце. 
+Животни век референце се односи на место кода где би се референца могла користити. Компајлер ће се потрудити да евалуира најмањи опсег који покрива свако потенцијално коришћење референце.
+Животни век може да се односи и на вредност и на референцу. Да би било јасно о чему се говори, животни век ће се односити на животни век референце, док ће се опсег односити на животни век вредности \ref{lst:scope-lifetime}.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -189,15 +199,13 @@ fn foo() {
     data.push('f');                        //   |
 } // <------------------------------------------+
 \end{minted}
-\caption{Opseg i životni vek}
+\caption{Опсег и животни век}
 \label{lst:scope-lifetime}
 \end{listing}
 
-\break
-
-Leksički (statički) životni vek se određuje na osnovu strukture programa. U primeru \ref{lst:lexical-lifetime} definiše se mutabilna referenca nad vektorom \verb|data|.
-Referencu je moguće koristiti u celokupnom opsegu funkcije, stoga opseg funkcije čini njen životni vek. To znači da su pozivi \verb|push| greška jer se dešavaju tokom životnog veka
-reference.
+Лексички (статички) животни век се одређује на основу структуре програма. У примеру \ref{lst:lexical-lifetime} дефинише се мутабилна референца над вектором \verb|data|.
+Референцу је могуће користити у целокупном опсегу функције, стога опсег функције чини њен животни век. То значи да су позиви \verb|push| грешка јер се дешавају током животног века
+референце.
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -210,11 +218,11 @@ fn bar() {
     data.push('f'); // GREŠKA!  //   |
 } // <------------------------------+
 \end{minted}
-\caption{Problem kod leksičkog životnog veka}
+\caption{Проблем код лексичког животног века}
 \label{lst:lexical-lifetime}
 \end{listing}
 
-Ovakvi problemi su se mogli zaobići enkapsuliranjem reference u blok \ref{lst:lexical-lifetime-ok}. Ovaj zaobilazni put je možda logičan ali izgleda veštački i otežava korišćenje jezika. 
+Овакви проблеми су се могли заобићи енкапсулирањем референце у блок \ref{lst:lexical-lifetime-ok}. Овај заобилазни пут је можда логичан али изгледа вештачки и отежава коришћење језика. 
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -229,12 +237,12 @@ fn bar() {
     data.push('f'); // OK
 }
 \end{minted}
-\caption{Opseg i životni vek}
+\caption{Опсег и животни век}
 \label{lst:lexical-lifetime-ok}
 \end{listing}
 
-Prethodni primer je jedan od najjednostavnijih problema leksičkog životnog veka, napredniji problemi postaju teži za uočavanje i još teži za razumevanje.
-Uvođenjem MSN-a dobijen je efikasan način evaluacije životnog veka na osnovu kontrole toka grafa gde se granularno određuje životni vek reference \ref{lst:dynamic-lifetime} (ovako \verb|Rust| radi danas).
+Претходни пример је један од најједноставнијих проблема лексичког животног века, напреднији проблеми постају тежи за уочавање и још тежи за разумевање.
+Увођењем МСН-а добијен је ефикасан начин евалуације животног века на основу контроле тока графа где се грануларно одређује животни век референце \ref{lst:dynamic-lifetime} (овако \verb|Rust| ради данас).
 
 \begin{listing}[H]
 \begin{minted}{rust}
@@ -248,6 +256,6 @@ fn bar() {
     data.push('f'); // OK
 } 
 \end{minted}
-\caption{Dinamički životni vek}
+\caption{Динамички животни век}
 \label{lst:dynamic-lifetime}
 \end{listing}
