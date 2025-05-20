@@ -3,39 +3,39 @@ digraph {
 
 
     sourceCode[
-        label = "Izvorni kod"
+        label = "Изворни код"
     ]
     tokenStream[
-        label = "Tok tokena"
+        label = "Ток токена"
     ]
     ast[
-        label = "Apstraktno sintaksno stablo"
+        label = "Апстрактно синтаксно стабло"
     ]
     hir[
-        label = "Reprezentacija visokog nivoa"
+        label = "Репрезентација високог нова"
     ]
     thir[
-        label = "Tipizirana reprezentacija visokog nivoa"
+        label = "Типизирана репрезентација високог нивоа"
     ]
     mir[
-        label = "Reprezentacija srednjeg nivoa"
+        label = "Репрезентација средњег нивоа"
     ]
 
     sourceCode->tokenStream[
-        label = "Lekser"
+        label = "Лексер"
     ]
 
     tokenStream->ast[
-        label = "Parser"
+        label = "Парсер"
     ]
 
     ast->hir[
-        label = "Ekspanzija"
+        label = "Експанзија"
     ]
     hir->thir[
-        label = "Upiti"
+        label = "Упити"
     ]
     thir->mir[
-        label = "Upiti"
+        label = "Упити"
     ]
 }

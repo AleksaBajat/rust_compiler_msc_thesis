@@ -3,41 +3,41 @@ digraph{
     rankdir = LR
 
     subgraph cluster_compile{
-        label = "Vreme kompajliranja"
+        label = "Време компајлирања"
 
         cFrontend[
-            label = "C frontend"
+            label = "C фронтенд"
         ]
         "a.c", "b.c", "c.c" -> cFrontend -> llvmOptimizer1
         llvmOptimizer1 -> "a.o", "b.o", "c.o"
 
 
         fortranFrontend[
-            label = "Fortran frontend"
+            label = "Fortran фронтенд"
         ]
         "d.f", "e.f" -> fortranFrontend -> llvmOptimizer2
         llvmOptimizer2 -> "f.o", "e.o"
     }
 
     subgraph cluster_link{
-        label = "Vreme linkovanja"
+        label = "Време линковања"
 
         "a.o", "b.o", "c.o" -> llvmLinker
         "f.o", "e.o" -> llvmLinker
         llvmLinker[
-            label = "LLVM linker"
+            label = "LLVM линкер"
         ]
         llvmOptimizer1[
-            label = "LLVM optimizator (1)"
+            label = "LLVM оптизатор (1)"
         ]
         llvmOptimizer2[
-            label = "LLVM optimizator (2)"
+            label = "LLVM оптимизатор (2)"
         ]
         llvmOptimizer3[
-            label = "LLVM optimizator (3)"
+            label = "LLVM оптимизатор (3)"
         ]
         llvmBackend[
-            label = "LLVM backend"
+            label = "LLVM бекенд"
         ]
 
         llvmLinker -> llvmOptimizer3 -> llvmBackend

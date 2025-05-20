@@ -4,29 +4,29 @@ digraph {
     
 
     cFrontend[
-        label = "C frontend"
+        label = "C фронтенд"
     ]
 
     fortranFrontend[
-        label = "Fortran frontend"
+        label = "Fortran фронтенд"
     ]
 
     adaFrontend[
-        label = "Ada frontend"
+        label = "Ada фронтенд"
     ]
 
     commonOptimizer[
-        label = "Zajednički optimizator"
+        label = "Заједнички оптимизатор"
     ]
 
     x86Backend[
-        label = "x86 backend"
+        label = "x86 бекенд"
     ]
     ARMBackend[
-        label = "ARM backend"
+        label = "ARM бекенд"
     ]
     PowerPCBackend[
-        label = "Power PC backend"
+        label = "Power PC бекенд"
     ]
 
     cFrontend, fortranFrontend, adaFrontend -> commonOptimizer;

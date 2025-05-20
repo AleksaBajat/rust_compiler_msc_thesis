@@ -3,31 +3,31 @@ digraph projection {
     rankdir = LR
 
     mono_query[
-        label = "Glavni upit (eval_always)"
+        label = "Главни упит (eval_always)"
     ]
 
     proj_1[
-        label = "Projekcioni upit 1"
+        label = "Пројекциони упит 1"
     ]
 
     proj_2[
-        label = "Projekcioni upit 2"
+        label = "Пројекциони упит 2"
     ]
 
     proj_3[
-        label = "Projekcioni upit 3"
+        label = "Пројекциони упит 3"
     ]
 
     zavisnost_1[
-        label = "Zavisnost 1"
+        label = "Зависност 1"
     ]
 
     zavisnost_2[
-        label = "Zavisnost 2"
+        label = "Зависност 2"
     ]
 
     zavisnost_3[
-        label = "Zavisnost 3"
+        label = "Зависност 3"
     ]
 
 
